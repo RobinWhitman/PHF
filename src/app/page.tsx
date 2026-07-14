@@ -35,18 +35,21 @@ const metrics = [
 ];
 
 export default function Home() {
+  const [isReady, setIsReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState(users[0].name);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("phf-user");
+    const savedUser = window.localStorage.getItem("phf-user");
     const user = users.find((item) => item.name === savedUser);
 
     if (user) {
       setCurrentUser(user);
     }
+
+    setIsReady(true);
   }, []);
 
   function handleLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -61,17 +64,28 @@ export default function Home() {
       return;
     }
 
-    localStorage.setItem("phf-user", user.name);
+    window.localStorage.setItem("phf-user", user.name);
     setCurrentUser(user);
     setPin("");
     setError("");
   }
 
   function handleLogout() {
-    localStorage.removeItem("phf-user");
+    window.localStorage.removeItem("phf-user");
     setCurrentUser(null);
     setPin("");
     setError("");
+  }
+
+  if (!isReady) {
+    return (
+      <main className="login-page">
+        <section className="login-card">
+          <p className="eyebrow">Pat Healthy Food</p>
+          <h1>Chargement</h1>
+        </section>
+      </main>
+    );
   }
 
   if (!currentUser) {
@@ -81,9 +95,7 @@ export default function Home() {
           <div>
             <p className="eyebrow">Pat Healthy Food</p>
             <h1>Connexion</h1>
-            <p className="login-text">
-              Accès réservé à l’équipe interne.
-            </p>
+            <p className="login-text">Accès réservé à l’équipe interne.</p>
           </div>
 
           <form className="login-form" onSubmit={handleLogin}>
