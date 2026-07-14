@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 
 type User = {
   name: string;
@@ -9,9 +10,9 @@ type User = {
 };
 
 const users: User[] = [
-  { name: "Robin", role: "admin", pin: "1111" },
-  { name: "Associé 1", role: "associe", pin: "2222" },
-  { name: "Associé 2", role: "associe", pin: "3333" },
+  { name: "Robin", role: "admin", pin: "2323" },
+  { name: "Patrice", role: "associe", pin: "1644" },
+  { name: "Megane", role: "associe", pin: "2010" },
 ];
 
 const navItems = [
@@ -34,10 +35,18 @@ const metrics = [
   { label: "TVA estimée", value: "0,00 €" },
 ];
 
+const settings = {
+  antennes: ["Cuisine principale", "Antenne 1", "Antenne 2"],
+  payments: ["Espèces", "Carte bancaire", "Virement"],
+  dishCategories: ["Plats", "Desserts", "Boissons"],
+  purchaseCategories: ["Ingrédients", "Emballages", "Charges"],
+};
+
 export default function Home() {
   const [isReady, setIsReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState(users[0].name);
+  const [activeModule, setActiveModule] = useState("Dashboard");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
 
@@ -52,7 +61,7 @@ export default function Home() {
     setIsReady(true);
   }, []);
 
-  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const user = users.find(
@@ -66,6 +75,7 @@ export default function Home() {
 
     window.localStorage.setItem("phf-user", user.name);
     setCurrentUser(user);
+    setActiveModule("Dashboard");
     setPin("");
     setError("");
   }
@@ -73,6 +83,7 @@ export default function Home() {
   function handleLogout() {
     window.localStorage.removeItem("phf-user");
     setCurrentUser(null);
+    setActiveModule("Dashboard");
     setPin("");
     setError("");
   }
@@ -133,9 +144,9 @@ export default function Home() {
 
           <div className="login-help">
             <p>Codes provisoires</p>
-            <span>Robin : 1111</span>
-            <span>Associé 1 : 2222</span>
-            <span>Associé 2 : 3333</span>
+            <span>Robin : 2323</span>
+            <span>Patrice : 1644</span>
+            <span>Megane : 2010</span>
           </div>
         </section>
       </main>
@@ -156,18 +167,19 @@ export default function Home() {
         </div>
 
         <nav className="desktop-nav">
-          {navItems.map((item, index) => {
+          {navItems.map((item) => {
             const disabled = item === "Paramètres" && !isAdmin;
 
             return (
               <button
                 className={[
                   "nav-item",
-                  index === 0 ? "active" : "",
+                  activeModule === item ? "active" : "",
                   disabled ? "disabled" : "",
                 ].join(" ")}
                 disabled={disabled}
                 key={item}
+                onClick={() => setActiveModule(item)}
               >
                 {item}
               </button>
@@ -186,79 +198,146 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 3</p>
-            <h1>Tableau de bord</h1>
+            <p className="eyebrow">Macro Sprint 4</p>
+            <h1>{activeModule}</h1>
           </div>
 
           <button className="primary-action">Nouvelle vente</button>
         </header>
 
-        <section className="metrics-grid">
-          {metrics.map((metric) => (
-            <article className="metric-card" key={metric.label}>
-              <p>{metric.label}</p>
-              <strong>{metric.value}</strong>
-            </article>
-          ))}
-        </section>
-
-        <section className="work-grid">
-          <article className="panel large-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Session</p>
-                <h2>Bienvenue {currentUser.name}</h2>
-              </div>
-              <span className="status-pill">
-                {isAdmin ? "Admin" : "Associé"}
-              </span>
-            </div>
-
-            <div className="empty-state">
-              <strong>Connexion active</strong>
-              <p>
-                Les actions importantes seront ensuite enregistrées avec
-                utilisateur, date et heure.
-              </p>
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="panel-heading">
-              <h2>Droits</h2>
-            </div>
-
-            <div className="alert-list">
-              <p>Accès ventes, stocks, production et factures</p>
-              <p>
-                Paramètres sensibles : {isAdmin ? "autorisés" : "bloqués"}
-              </p>
-              <p>Historique utilisateur préparé</p>
-            </div>
-          </article>
-
-          <article className="panel">
-            <div className="panel-heading">
-              <h2>Actions rapides</h2>
-            </div>
-
-            <div className="action-list">
-              <button>Nouvelle vente</button>
-              <button>Créer un menu</button>
-              <button>Prévoir production</button>
-              <button>Ajouter facture</button>
-            </div>
-          </article>
-        </section>
+        {activeModule === "Paramètres" && isAdmin ? (
+          <SettingsView />
+        ) : (
+          <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
+        )}
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Menus", "Stocks", "Ventes", "TVA"].map((item, index) => (
-          <button className={index === 0 ? "active" : ""} key={item}>
+        {["Dashboard", "Menus", "Stocks", "Ventes", "TVA"].map((item) => (
+          <button
+            className={activeModule === item ? "active" : ""}
+            key={item}
+            onClick={() => setActiveModule(item)}
+          >
             {item}
           </button>
         ))}
       </nav>
     </main>
+  );
+}
+
+function DashboardView({
+  currentUser,
+  isAdmin,
+}: {
+  currentUser: User;
+  isAdmin: boolean;
+}) {
+  return (
+    <>
+      <section className="metrics-grid">
+        {metrics.map((metric) => (
+          <article className="metric-card" key={metric.label}>
+            <p>{metric.label}</p>
+            <strong>{metric.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <section className="work-grid">
+        <article className="panel large-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Session</p>
+              <h2>Bienvenue {currentUser.name}</h2>
+            </div>
+            <span className="status-pill">{isAdmin ? "Admin" : "Associé"}</span>
+          </div>
+
+          <div className="empty-state">
+            <strong>Connexion active</strong>
+            <p>
+              Les actions importantes seront ensuite enregistrées avec
+              utilisateur, date et heure.
+            </p>
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <h2>Droits</h2>
+          </div>
+
+          <div className="alert-list">
+            <p>Accès ventes, stocks, production et factures</p>
+            <p>Paramètres sensibles : {isAdmin ? "autorisés" : "bloqués"}</p>
+            <p>Historique utilisateur préparé</p>
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="panel-heading">
+            <h2>Actions rapides</h2>
+          </div>
+
+          <div className="action-list">
+            <button>Nouvelle vente</button>
+            <button>Créer un menu</button>
+            <button>Prévoir production</button>
+            <button>Ajouter facture</button>
+          </div>
+        </article>
+      </section>
+    </>
+  );
+}
+
+function SettingsView() {
+  return (
+    <section className="settings-grid">
+      <article className="panel setting-card">
+        <p className="eyebrow">Lieux de vente</p>
+        <h2>Antennes</h2>
+        <div className="setting-list">
+          {settings.antennes.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
+      </article>
+
+      <article className="panel setting-card">
+        <p className="eyebrow">Encaissement</p>
+        <h2>Moyens de paiement</h2>
+        <div className="setting-list">
+          {settings.payments.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
+      </article>
+
+      <article className="panel setting-card">
+        <p className="eyebrow">Organisation</p>
+        <h2>Catégories</h2>
+        <div className="setting-list">
+          {settings.dishCategories.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
+          {settings.purchaseCategories.map((item) => (
+            <p key={item}>{item}</p>
+          ))}
+        </div>
+      </article>
+
+      <article className="panel setting-card">
+        <p className="eyebrow">Fiscalité</p>
+        <h2>TVA</h2>
+        <div className="setting-list">
+          <p>TVA ventes : 5,5 %</p>
+          <p>TVA achats : saisie manuelle</p>
+          <p>Modification réservée à Robin</p>
+        </div>
+      </article>
+    </section>
   );
 }
