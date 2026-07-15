@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 type User = { name: string; role: "admin" | "associe"; pin: string };
+
 type Dish = {
   id: number;
   name: string;
@@ -14,6 +15,7 @@ type Dish = {
   photo: string;
   active: boolean;
 };
+
 type WeeklyMenu = {
   id: number;
   name: string;
@@ -21,6 +23,7 @@ type WeeklyMenu = {
   endDate: string;
   dishIds: number[];
 };
+
 type SpecItem = {
   id: number;
   name: string;
@@ -28,19 +31,48 @@ type SpecItem = {
   unit: string;
   type: "ingredient" | "consommable";
 };
-type DishSpec = { dishId: number; items: SpecItem[] };
-type ProductionLine = { dishId: number; portions: string };
+
+type DishSpec = {
+  dishId: number;
+  items: SpecItem[];
+};
+
+type ProductionLine = {
+  dishId: number;
+  portions: string;
+};
+
 type ProductionPlan = {
   id: number;
   name: string;
   date: string;
   lines: ProductionLine[];
 };
+
 type ShoppingNeed = {
   name: string;
   quantity: string;
   unit: string;
   type: "ingredient" | "consommable";
+};
+
+type StockItem = {
+  id: number;
+  name: string;
+  category: "ingredient" | "consommable" | "plat";
+  unit: string;
+  quantity: string;
+  minQuantity: string;
+};
+
+type StockMovement = {
+  id: number;
+  stockItemId: number;
+  type: "entrée" | "sortie";
+  quantity: string;
+  date: string;
+  userName: string;
+  comment: string;
 };
 
 const users: User[] = [
@@ -98,10 +130,13 @@ export default function Home() {
   const [activeModule, setActiveModule] = useState("Dashboard");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+
   const [dishes, setDishes] = useState<Dish[]>(initialDishes);
   const [menus, setMenus] = useState<WeeklyMenu[]>([]);
   const [specs, setSpecs] = useState<DishSpec[]>([]);
   const [productions, setProductions] = useState<ProductionPlan[]>([]);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
@@ -109,6 +144,8 @@ export default function Home() {
     const savedMenus = window.localStorage.getItem("phf-menus");
     const savedSpecs = window.localStorage.getItem("phf-specs");
     const savedProductions = window.localStorage.getItem("phf-productions");
+    const savedStockItems = window.localStorage.getItem("phf-stock-items");
+    const savedStockMovements = window.localStorage.getItem("phf-stock-movements");
     const user = users.find((item) => item.name === savedUser);
 
     if (user) setCurrentUser(user);
@@ -116,18 +153,22 @@ export default function Home() {
     if (savedMenus) setMenus(JSON.parse(savedMenus));
     if (savedSpecs) setSpecs(JSON.parse(savedSpecs));
     if (savedProductions) setProductions(JSON.parse(savedProductions));
+    if (savedStockItems) setStockItems(JSON.parse(savedStockItems));
+    if (savedStockMovements) setStockMovements(JSON.parse(savedStockMovements));
 
     setIsReady(true);
   }, []);
 
   useEffect(() => {
-    if (isReady) {
-      window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
-      window.localStorage.setItem("phf-menus", JSON.stringify(menus));
-      window.localStorage.setItem("phf-specs", JSON.stringify(specs));
-      window.localStorage.setItem("phf-productions", JSON.stringify(productions));
-    }
-  }, [dishes, menus, specs, productions, isReady]);
+    if (!isReady) return;
+
+    window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
+    window.localStorage.setItem("phf-menus", JSON.stringify(menus));
+    window.localStorage.setItem("phf-specs", JSON.stringify(specs));
+    window.localStorage.setItem("phf-productions", JSON.stringify(productions));
+    window.localStorage.setItem("phf-stock-items", JSON.stringify(stockItems));
+    window.localStorage.setItem("phf-stock-movements", JSON.stringify(stockMovements));
+  }, [dishes, menus, specs, productions, stockItems, stockMovements, isReady]);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -157,35 +198,28 @@ export default function Home() {
   }
 
   function addDish(dish: Omit<Dish, "id">) {
-    setDishes((currentDishes) => [{ ...dish, id: Date.now() }, ...currentDishes]);
+    setDishes((current) => [{ ...dish, id: Date.now() }, ...current]);
   }
 
   function toggleDish(id: number) {
-    setDishes((currentDishes) =>
-      currentDishes.map((dish) =>
+    setDishes((current) =>
+      current.map((dish) =>
         dish.id === id ? { ...dish, active: !dish.active } : dish
       )
     );
   }
 
   function deleteDish(id: number) {
-    setDishes((currentDishes) =>
-      currentDishes.filter((dish) => dish.id !== id)
-    );
-
-    setMenus((currentMenus) =>
-      currentMenus.map((menu) => ({
+    setDishes((current) => current.filter((dish) => dish.id !== id));
+    setMenus((current) =>
+      current.map((menu) => ({
         ...menu,
         dishIds: menu.dishIds.filter((dishId) => dishId !== id),
       }))
     );
-
-    setSpecs((currentSpecs) =>
-      currentSpecs.filter((spec) => spec.dishId !== id)
-    );
-
-    setProductions((currentProductions) =>
-      currentProductions.map((production) => ({
+    setSpecs((current) => current.filter((spec) => spec.dishId !== id));
+    setProductions((current) =>
+      current.map((production) => ({
         ...production,
         lines: production.lines.filter((line) => line.dishId !== id),
       }))
@@ -193,23 +227,23 @@ export default function Home() {
   }
 
   function addMenu(menu: Omit<WeeklyMenu, "id">) {
-    setMenus((currentMenus) => [{ ...menu, id: Date.now() }, ...currentMenus]);
+    setMenus((current) => [{ ...menu, id: Date.now() }, ...current]);
   }
 
   function deleteMenu(id: number) {
-    setMenus((currentMenus) => currentMenus.filter((menu) => menu.id !== id));
+    setMenus((current) => current.filter((menu) => menu.id !== id));
   }
 
   function addSpecItem(dishId: number, item: Omit<SpecItem, "id">) {
-    setSpecs((currentSpecs) => {
-      const existingSpec = currentSpecs.find((spec) => spec.dishId === dishId);
+    setSpecs((current) => {
+      const existingSpec = current.find((spec) => spec.dishId === dishId);
       const newItem = { ...item, id: Date.now() };
 
       if (!existingSpec) {
-        return [{ dishId, items: [newItem] }, ...currentSpecs];
+        return [{ dishId, items: [newItem] }, ...current];
       }
 
-      return currentSpecs.map((spec) =>
+      return current.map((spec) =>
         spec.dishId === dishId
           ? { ...spec, items: [newItem, ...spec.items] }
           : spec
@@ -218,8 +252,8 @@ export default function Home() {
   }
 
   function deleteSpecItem(dishId: number, itemId: number) {
-    setSpecs((currentSpecs) =>
-      currentSpecs.map((spec) =>
+    setSpecs((current) =>
+      current.map((spec) =>
         spec.dishId === dishId
           ? { ...spec, items: spec.items.filter((item) => item.id !== itemId) }
           : spec
@@ -228,15 +262,49 @@ export default function Home() {
   }
 
   function addProduction(production: Omit<ProductionPlan, "id">) {
-    setProductions((currentProductions) => [
-      { ...production, id: Date.now() },
-      ...currentProductions,
-    ]);
+    setProductions((current) => [{ ...production, id: Date.now() }, ...current]);
   }
 
   function deleteProduction(id: number) {
-    setProductions((currentProductions) =>
-      currentProductions.filter((production) => production.id !== id)
+    setProductions((current) =>
+      current.filter((production) => production.id !== id)
+    );
+  }
+
+  function addStockItem(item: Omit<StockItem, "id">) {
+    setStockItems((current) => [{ ...item, id: Date.now() }, ...current]);
+  }
+
+  function deleteStockItem(id: number) {
+    setStockItems((current) => current.filter((item) => item.id !== id));
+    setStockMovements((current) =>
+      current.filter((movement) => movement.stockItemId !== id)
+    );
+  }
+
+  function addStockMovement(movement: Omit<StockMovement, "id" | "userName">) {
+    const movementWithUser: StockMovement = {
+      ...movement,
+      id: Date.now(),
+      userName: currentUser?.name || "Utilisateur inconnu",
+    };
+
+    setStockMovements((current) => [movementWithUser, ...current]);
+
+    setStockItems((current) =>
+      current.map((item) => {
+        if (item.id !== movement.stockItemId) return item;
+
+        const nextQuantity =
+          movement.type === "entrée"
+            ? addDecimalStrings(item.quantity, movement.quantity)
+            : subtractDecimalStrings(item.quantity, movement.quantity);
+
+        return {
+          ...item,
+          quantity: nextQuantity,
+        };
+      })
     );
   }
 
@@ -350,7 +418,7 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 9</p>
+            <p className="eyebrow">Macro Sprint 10</p>
             <h1>{activeModule}</h1>
           </div>
 
@@ -400,13 +468,21 @@ export default function Home() {
             specs={specs}
             productions={productions}
           />
+        ) : activeModule === "Stocks" ? (
+          <StocksView
+            stockItems={stockItems}
+            stockMovements={stockMovements}
+            onAddStockItem={addStockItem}
+            onDeleteStockItem={deleteStockItem}
+            onAddStockMovement={addStockMovement}
+          />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
         )}
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Plats", "Production", "Courses", "Ventes"].map((item) => (
+        {["Dashboard", "Courses", "Stocks", "Production", "Ventes"].map((item) => (
           <button
             className={activeModule === item ? "active" : ""}
             key={item}
@@ -546,7 +622,10 @@ function DishesView({
 
           <label>
             Catégorie
-            <select value={category} onChange={(event) => setCategory(event.target.value)}>
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
               {settings.dishCategories.map((item) => (
                 <option key={item}>{item}</option>
               ))}
@@ -646,20 +725,18 @@ function MenusView({
 
   function addDishToMenu() {
     const dishId = Number(selectedDishId);
-
     if (!dishId || dishIds.includes(dishId)) return;
 
-    setDishIds((currentIds) => [...currentIds, dishId]);
+    setDishIds((current) => [...current, dishId]);
     setSelectedDishId("");
   }
 
   function removeDishFromMenu(dishId: number) {
-    setDishIds((currentIds) => currentIds.filter((id) => id !== dishId));
+    setDishIds((current) => current.filter((id) => id !== dishId));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     if (!name.trim() || !startDate || !endDate || dishIds.length === 0) return;
 
     onAddMenu({ name, startDate, endDate, dishIds });
@@ -830,7 +907,6 @@ function SpecsView({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     if (!dishId || !name.trim() || !quantity.trim() || !unit.trim()) return;
 
     onAddSpecItem(dishId, { name, quantity, unit, type });
@@ -1000,7 +1076,6 @@ function ProductionView({
 
   function loadMenu() {
     const menu = menus.find((item) => item.id === Number(selectedMenuId));
-
     if (!menu) return;
 
     setLines(menu.dishIds.map((dishId) => ({ dishId, portions: "" })));
@@ -1009,19 +1084,18 @@ function ProductionView({
 
   function addLine() {
     const dishId = Number(selectedDishId);
-
     if (!dishId || !portions.trim()) return;
 
-    setLines((currentLines) => {
-      const existingLine = currentLines.find((line) => line.dishId === dishId);
+    setLines((current) => {
+      const existingLine = current.find((line) => line.dishId === dishId);
 
       if (existingLine) {
-        return currentLines.map((line) =>
+        return current.map((line) =>
           line.dishId === dishId ? { ...line, portions } : line
         );
       }
 
-      return [{ dishId, portions }, ...currentLines];
+      return [{ dishId, portions }, ...current];
     });
 
     setSelectedDishId("");
@@ -1029,24 +1103,21 @@ function ProductionView({
   }
 
   function updateLinePortions(dishId: number, value: string) {
-    setLines((currentLines) =>
-      currentLines.map((line) =>
+    setLines((current) =>
+      current.map((line) =>
         line.dishId === dishId ? { ...line, portions: value } : line
       )
     );
   }
 
   function removeLine(dishId: number) {
-    setLines((currentLines) =>
-      currentLines.filter((line) => line.dishId !== dishId)
-    );
+    setLines((current) => current.filter((line) => line.dishId !== dishId));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const validLines = lines.filter((line) => line.portions.trim());
-
     if (!name.trim() || !date || validLines.length === 0) return;
 
     onAddProduction({ name, date, lines: validLines });
@@ -1239,10 +1310,7 @@ function ShoppingListView({
     productions.find((production) => production.id === Number(selectedProductionId)) ||
     productions[0];
 
-  const needs = selectedProduction
-    ? getShoppingNeeds(selectedProduction, specs)
-    : [];
-
+  const needs = selectedProduction ? getShoppingNeeds(selectedProduction, specs) : [];
   const ingredients = needs.filter((need) => need.type === "ingredient");
   const consumables = needs.filter((need) => need.type === "consommable");
 
@@ -1346,7 +1414,9 @@ function ShoppingSection({
               <div className="dish-info">
                 <div>
                   <strong>{item.name}</strong>
-                  <span>{item.type === "ingredient" ? "Ingrédient" : "Consommable"}</span>
+                  <span>
+                    {item.type === "ingredient" ? "Ingrédient" : "Consommable"}
+                  </span>
                 </div>
                 <p>Quantité théorique exacte</p>
               </div>
@@ -1360,6 +1430,335 @@ function ShoppingSection({
         )}
       </div>
     </div>
+  );
+}
+
+function StocksView({
+  stockItems,
+  stockMovements,
+  onAddStockItem,
+  onDeleteStockItem,
+  onAddStockMovement,
+}: {
+  stockItems: StockItem[];
+  stockMovements: StockMovement[];
+  onAddStockItem: (item: Omit<StockItem, "id">) => void;
+  onDeleteStockItem: (id: number) => void;
+  onAddStockMovement: (movement: Omit<StockMovement, "id" | "userName">) => void;
+}) {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<StockItem["category"]>("ingredient");
+  const [unit, setUnit] = useState("g");
+  const [quantity, setQuantity] = useState("");
+  const [minQuantity, setMinQuantity] = useState("");
+
+  const [movementStockItemId, setMovementStockItemId] = useState("");
+  const [movementType, setMovementType] = useState<"entrée" | "sortie">("entrée");
+  const [movementQuantity, setMovementQuantity] = useState("");
+  const [movementDate, setMovementDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [movementComment, setMovementComment] = useState("");
+
+  function handleCreateItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!name.trim() || !unit.trim()) return;
+
+    onAddStockItem({
+      name,
+      category,
+      unit,
+      quantity: quantity.trim() || "0",
+      minQuantity: minQuantity.trim() || "0",
+    });
+
+    setName("");
+    setCategory("ingredient");
+    setUnit("g");
+    setQuantity("");
+    setMinQuantity("");
+  }
+
+  function handleCreateMovement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const stockItemId = Number(movementStockItemId);
+
+    if (!stockItemId || !movementQuantity.trim() || !movementDate) return;
+
+    onAddStockMovement({
+      stockItemId,
+      type: movementType,
+      quantity: movementQuantity,
+      date: movementDate,
+      comment: movementComment,
+    });
+
+    setMovementStockItemId("");
+    setMovementType("entrée");
+    setMovementQuantity("");
+    setMovementDate(new Date().toISOString().slice(0, 10));
+    setMovementComment("");
+  }
+
+  const lowStockItems = stockItems.filter((item) =>
+    isLowerOrEqualDecimal(item.quantity, item.minQuantity)
+  );
+
+  return (
+    <section className="dishes-layout">
+      <article className="panel dish-form-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Stock</p>
+            <h2>Nouvel article</h2>
+          </div>
+        </div>
+
+        <form className="entity-form" onSubmit={handleCreateItem}>
+          <label>
+            Nom
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ex : poulet, riz, barquette"
+            />
+          </label>
+
+          <label>
+            Catégorie
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value as StockItem["category"])}
+            >
+              <option value="ingredient">Ingrédient</option>
+              <option value="consommable">Consommable</option>
+              <option value="plat">Plat préparé</option>
+            </select>
+          </label>
+
+          <label>
+            Unité
+            <select value={unit} onChange={(event) => setUnit(event.target.value)}>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+              <option value="unité">unité</option>
+            </select>
+          </label>
+
+          <label>
+            Stock actuel
+            <input
+              inputMode="decimal"
+              value={quantity}
+              onChange={(event) => setQuantity(event.target.value)}
+              placeholder="Ex : 12.5"
+            />
+          </label>
+
+          <label>
+            Seuil faible
+            <input
+              inputMode="decimal"
+              value={minQuantity}
+              onChange={(event) => setMinQuantity(event.target.value)}
+              placeholder="Ex : 2"
+            />
+          </label>
+
+          <button className="primary-action" type="submit">
+            Ajouter l'article
+          </button>
+        </form>
+
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Mouvement</p>
+            <h2>Entrée / sortie</h2>
+          </div>
+        </div>
+
+        <form className="entity-form" onSubmit={handleCreateMovement}>
+          <label>
+            Article
+            <select
+              value={movementStockItemId}
+              onChange={(event) => setMovementStockItemId(event.target.value)}
+            >
+              <option value="">Choisir un article</option>
+              {stockItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} - {item.quantity} {item.unit}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Type
+            <select
+              value={movementType}
+              onChange={(event) =>
+                setMovementType(event.target.value as "entrée" | "sortie")
+              }
+            >
+              <option value="entrée">Entrée en stock</option>
+              <option value="sortie">Sortie de stock</option>
+            </select>
+          </label>
+
+          <label>
+            Quantité exacte
+            <input
+              inputMode="decimal"
+              value={movementQuantity}
+              onChange={(event) => setMovementQuantity(event.target.value)}
+              placeholder="Ex : 3.5"
+            />
+          </label>
+
+          <label>
+            Date
+            <input
+              type="date"
+              value={movementDate}
+              onChange={(event) => setMovementDate(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Commentaire
+            <input
+              value={movementComment}
+              onChange={(event) => setMovementComment(event.target.value)}
+              placeholder="Ex : achat Metro, correction, production"
+            />
+          </label>
+
+          <button className="primary-action" type="submit">
+            Enregistrer le mouvement
+          </button>
+        </form>
+      </article>
+
+      <article className="panel dishes-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Stock actuel</p>
+            <h2>Articles</h2>
+          </div>
+          <span className="status-pill">{stockItems.length}</span>
+        </div>
+
+        <div className="dish-list">
+          {lowStockItems.length > 0 ? (
+            <div className="panel">
+              <div className="panel-heading">
+                <h2>Stocks faibles</h2>
+                <span className="status-pill">{lowStockItems.length}</span>
+              </div>
+
+              <div className="alert-list">
+                {lowStockItems.map((item) => (
+                  <p key={item.id}>
+                    {item.name} : {item.quantity} {item.unit}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {stockItems.length === 0 ? (
+            <div className="empty-state">
+              <strong>Aucun article</strong>
+              <p>Ajoute tes ingrédients, consommables ou plats préparés.</p>
+            </div>
+          ) : (
+            stockItems.map((item) => (
+              <div className="dish-row" key={item.id}>
+                <div className="dish-photo">{getStockCategoryLabel(item.category)}</div>
+
+                <div className="dish-info">
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>{getStockCategoryName(item.category)}</span>
+                  </div>
+                  <p>
+                    Seuil faible : {item.minQuantity} {item.unit}
+                  </p>
+                </div>
+
+                <div className="dish-meta">
+                  <strong>{item.quantity}</strong>
+                  <span>{item.unit}</span>
+                </div>
+
+                <div className="dish-actions">
+                  <button
+                    className="delete-action"
+                    onClick={() => onDeleteStockItem(item.id)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+
+          <div className="panel">
+            <div className="panel-heading">
+              <h2>Historique</h2>
+              <span className="status-pill">{stockMovements.length}</span>
+            </div>
+
+            <div className="dish-list">
+              {stockMovements.length === 0 ? (
+                <div className="empty-state">
+                  <strong>Aucun mouvement</strong>
+                  <p>Les entrées et sorties de stock apparaîtront ici.</p>
+                </div>
+              ) : (
+                stockMovements.map((movement) => {
+                  const item = stockItems.find(
+                    (stockItem) => stockItem.id === movement.stockItemId
+                  );
+
+                  return (
+                    <div className="dish-row" key={movement.id}>
+                      <div className="dish-photo">
+                        {movement.type === "entrée" ? "IN" : "OUT"}
+                      </div>
+
+                      <div className="dish-info">
+                        <div>
+                          <strong>{item?.name || "Article supprimé"}</strong>
+                          <span>{movement.type}</span>
+                        </div>
+                        <p>
+                          {formatDate(movement.date)} - {movement.userName}
+                        </p>
+                        <p>{movement.comment || "Aucun commentaire."}</p>
+                      </div>
+
+                      <div className="dish-meta">
+                        <strong>
+                          {movement.type === "entrée" ? "+" : "-"}
+                          {movement.quantity}
+                        </strong>
+                        <span>{item?.unit || ""}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
   );
 }
 
@@ -1463,7 +1862,6 @@ function getShoppingNeeds(production: ProductionPlan, specs: DishSpec[]) {
 
   production.lines.forEach((line) => {
     const spec = specs.find((item) => item.dishId === line.dishId);
-
     if (!spec) return;
 
     spec.items.forEach((item) => {
@@ -1518,6 +1916,18 @@ function multiplyDecimalStrings(quantity: string, multiplier: string) {
 }
 
 function addDecimalStrings(first: string, second: string) {
+  return calculateDecimalStrings(first, second, "add");
+}
+
+function subtractDecimalStrings(first: string, second: string) {
+  return calculateDecimalStrings(first, second, "subtract");
+}
+
+function calculateDecimalStrings(
+  first: string,
+  second: string,
+  operation: "add" | "subtract"
+) {
   const cleanFirst = first.replace(",", ".").trim();
   const cleanSecond = second.replace(",", ".").trim();
 
@@ -1525,26 +1935,50 @@ function addDecimalStrings(first: string, second: string) {
   const secondDecimals = cleanSecond.split(".")[1]?.length || 0;
   const totalDecimals = Math.max(firstDecimals, secondDecimals);
 
-  const firstInteger = Number(cleanFirst.replace(".", "").padEnd(
-    cleanFirst.replace(".", "").length + totalDecimals - firstDecimals,
-    "0"
-  ));
-  const secondInteger = Number(cleanSecond.replace(".", "").padEnd(
-    cleanSecond.replace(".", "").length + totalDecimals - secondDecimals,
-    "0"
-  ));
+  const firstInteger = Number(
+    cleanFirst
+      .replace(".", "")
+      .padEnd(cleanFirst.replace(".", "").length + totalDecimals - firstDecimals, "0")
+  );
+
+  const secondInteger = Number(
+    cleanSecond
+      .replace(".", "")
+      .padEnd(cleanSecond.replace(".", "").length + totalDecimals - secondDecimals, "0")
+  );
 
   if (Number.isNaN(firstInteger) || Number.isNaN(secondInteger)) {
     return "0";
   }
 
-  const result = (firstInteger + secondInteger).toString();
+  const calculated =
+    operation === "add" ? firstInteger + secondInteger : firstInteger - secondInteger;
 
-  if (totalDecimals === 0) return result;
+  const sign = calculated < 0 ? "-" : "";
+  const result = Math.abs(calculated).toString();
+
+  if (totalDecimals === 0) return `${sign}${result}`;
 
   const paddedResult = result.padStart(totalDecimals + 1, "0");
   const integerPart = paddedResult.slice(0, -totalDecimals);
   const decimalPart = paddedResult.slice(-totalDecimals).replace(/0+$/, "");
 
-  return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+  return decimalPart ? `${sign}${integerPart}.${decimalPart}` : `${sign}${integerPart}`;
+}
+
+function isLowerOrEqualDecimal(first: string, second: string) {
+  const difference = subtractDecimalStrings(first, second);
+  return Number(difference) <= 0;
+}
+
+function getStockCategoryLabel(category: StockItem["category"]) {
+  if (category === "ingredient") return "ING";
+  if (category === "consommable") return "CON";
+  return "PLAT";
+}
+
+function getStockCategoryName(category: StockItem["category"]) {
+  if (category === "ingredient") return "Ingrédient";
+  if (category === "consommable") return "Consommable";
+  return "Plat préparé";
 }
