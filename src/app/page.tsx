@@ -28,6 +28,19 @@ type WeeklyMenu = {
   dishIds: number[];
 };
 
+type SpecItem = {
+  id: number;
+  name: string;
+  quantity: string;
+  unit: string;
+  type: "ingredient" | "consommable";
+};
+
+type DishSpec = {
+  dishId: number;
+  items: SpecItem[];
+};
+
 const users: User[] = [
   { name: "Robin", role: "admin", pin: "2323" },
   { name: "Patrice", role: "associe", pin: "1644" },
@@ -38,6 +51,7 @@ const navItems = [
   "Dashboard",
   "Plats",
   "Menus",
+  "Cahiers",
   "Production",
   "Courses",
   "Stocks",
@@ -84,24 +98,19 @@ export default function Home() {
   const [error, setError] = useState("");
   const [dishes, setDishes] = useState<Dish[]>(initialDishes);
   const [menus, setMenus] = useState<WeeklyMenu[]>([]);
+  const [specs, setSpecs] = useState<DishSpec[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
     const savedDishes = window.localStorage.getItem("phf-dishes");
     const savedMenus = window.localStorage.getItem("phf-menus");
+    const savedSpecs = window.localStorage.getItem("phf-specs");
     const user = users.find((item) => item.name === savedUser);
 
-    if (user) {
-      setCurrentUser(user);
-    }
-
-    if (savedDishes) {
-      setDishes(JSON.parse(savedDishes));
-    }
-
-    if (savedMenus) {
-      setMenus(JSON.parse(savedMenus));
-    }
+    if (user) setCurrentUser(user);
+    if (savedDishes) setDishes(JSON.parse(savedDishes));
+    if (savedMenus) setMenus(JSON.parse(savedMenus));
+    if (savedSpecs) setSpecs(JSON.parse(savedSpecs));
 
     setIsReady(true);
   }, []);
@@ -110,8 +119,9 @@ export default function Home() {
     if (isReady) {
       window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
       window.localStorage.setItem("phf-menus", JSON.stringify(menus));
+      window.localStorage.setItem("phf-specs", JSON.stringify(specs));
     }
-  }, [dishes, menus, isReady]);
+  }, [dishes, menus, specs, isReady]);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,6 +173,10 @@ export default function Home() {
         dishIds: menu.dishIds.filter((dishId) => dishId !== id),
       }))
     );
+
+    setSpecs((currentSpecs) =>
+      currentSpecs.filter((spec) => spec.dishId !== id)
+    );
   }
 
   function addMenu(menu: Omit<WeeklyMenu, "id">) {
@@ -171,6 +185,36 @@ export default function Home() {
 
   function deleteMenu(id: number) {
     setMenus((currentMenus) => currentMenus.filter((menu) => menu.id !== id));
+  }
+
+  function addSpecItem(dishId: number, item: Omit<SpecItem, "id">) {
+    setSpecs((currentSpecs) => {
+      const existingSpec = currentSpecs.find((spec) => spec.dishId === dishId);
+      const newItem = { ...item, id: Date.now() };
+
+      if (!existingSpec) {
+        return [{ dishId, items: [newItem] }, ...currentSpecs];
+      }
+
+      return currentSpecs.map((spec) =>
+        spec.dishId === dishId
+          ? { ...spec, items: [newItem, ...spec.items] }
+          : spec
+      );
+    });
+  }
+
+  function deleteSpecItem(dishId: number, itemId: number) {
+    setSpecs((currentSpecs) =>
+      currentSpecs.map((spec) =>
+        spec.dishId === dishId
+          ? {
+              ...spec,
+              items: spec.items.filter((item) => item.id !== itemId),
+            }
+          : spec
+      )
+    );
   }
 
   if (!isReady) {
@@ -283,7 +327,7 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 6</p>
+            <p className="eyebrow">Macro Sprint 7</p>
             <h1>{activeModule}</h1>
           </div>
 
@@ -311,13 +355,20 @@ export default function Home() {
             onAddMenu={addMenu}
             onDeleteMenu={deleteMenu}
           />
+        ) : activeModule === "Cahiers" ? (
+          <SpecsView
+            dishes={dishes}
+            specs={specs}
+            onAddSpecItem={addSpecItem}
+            onDeleteSpecItem={deleteSpecItem}
+          />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
         )}
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Plats", "Menus", "Stocks", "Ventes"].map((item) => (
+        {["Dashboard", "Plats", "Menus", "Cahiers", "Ventes"].map((item) => (
           <button
             className={activeModule === item ? "active" : ""}
             key={item}
@@ -418,9 +469,7 @@ function DishesView({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!name.trim() || !price.trim()) {
-      return;
-    }
+    if (!name.trim() || !price.trim()) return;
 
     onAddDish({
       name,
@@ -453,11 +502,7 @@ function DishesView({
         <form className="entity-form" onSubmit={handleSubmit}>
           <label>
             Nom
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Ex : Shawarma Bowl"
-            />
+            <input value={name} onChange={(event) => setName(event.target.value)} />
           </label>
 
           <label>
@@ -466,16 +511,12 @@ function DishesView({
               inputMode="decimal"
               value={price}
               onChange={(event) => setPrice(event.target.value)}
-              placeholder="Ex : 12.90"
             />
           </label>
 
           <label>
             Catégorie
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            >
+            <select value={category} onChange={(event) => setCategory(event.target.value)}>
               {settings.dishCategories.map((item) => (
                 <option key={item}>{item}</option>
               ))}
@@ -491,11 +532,7 @@ function DishesView({
 
           <label>
             Photo
-            <input
-              value={photo}
-              onChange={(event) => setPhoto(event.target.value)}
-              placeholder="Lien image provisoire"
-            />
+            <input value={photo} onChange={(event) => setPhoto(event.target.value)} />
           </label>
 
           <label>
@@ -503,7 +540,6 @@ function DishesView({
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Composition rapide du plat"
             />
           </label>
 
@@ -548,10 +584,7 @@ function DishesView({
                   {dish.active ? "Actif" : "Inactif"}
                 </button>
 
-                <button
-                  className="delete-action"
-                  onClick={() => onDeleteDish(dish.id)}
-                >
+                <button className="delete-action" onClick={() => onDeleteDish(dish.id)}>
                   Supprimer
                 </button>
               </div>
@@ -584,9 +617,7 @@ function MenusView({
   function addDishToMenu() {
     const dishId = Number(selectedDishId);
 
-    if (!dishId || dishIds.includes(dishId)) {
-      return;
-    }
+    if (!dishId || dishIds.includes(dishId)) return;
 
     setDishIds((currentIds) => [...currentIds, dishId]);
     setSelectedDishId("");
@@ -599,16 +630,9 @@ function MenusView({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!name.trim() || !startDate || !endDate || dishIds.length === 0) {
-      return;
-    }
+    if (!name.trim() || !startDate || !endDate || dishIds.length === 0) return;
 
-    onAddMenu({
-      name,
-      startDate,
-      endDate,
-      dishIds,
-    });
+    onAddMenu({ name, startDate, endDate, dishIds });
 
     setName("");
     setStartDate("");
@@ -630,11 +654,7 @@ function MenusView({
         <form className="entity-form" onSubmit={handleSubmit}>
           <label>
             Nom du menu
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Ex : Semaine du 15 juillet"
-            />
+            <input value={name} onChange={(event) => setName(event.target.value)} />
           </label>
 
           <label>
@@ -740,9 +760,183 @@ function MenusView({
                 </div>
 
                 <div className="dish-actions">
+                  <button className="delete-action" onClick={() => onDeleteMenu(menu.id)}>
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function SpecsView({
+  dishes,
+  specs,
+  onAddSpecItem,
+  onDeleteSpecItem,
+}: {
+  dishes: Dish[];
+  specs: DishSpec[];
+  onAddSpecItem: (dishId: number, item: Omit<SpecItem, "id">) => void;
+  onDeleteSpecItem: (dishId: number, itemId: number) => void;
+}) {
+  const activeDishes = dishes.filter((dish) => dish.active);
+  const [selectedDishId, setSelectedDishId] = useState(
+    activeDishes[0]?.id.toString() || ""
+  );
+  const [name, setName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("g");
+  const [type, setType] = useState<"ingredient" | "consommable">("ingredient");
+
+  const dishId = Number(selectedDishId);
+  const selectedDish = dishes.find((dish) => dish.id === dishId);
+  const selectedSpec = specs.find((spec) => spec.dishId === dishId);
+  const items = selectedSpec?.items || [];
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!dishId || !name.trim() || !quantity.trim() || !unit.trim()) return;
+
+    onAddSpecItem(dishId, {
+      name,
+      quantity,
+      unit,
+      type,
+    });
+
+    setName("");
+    setQuantity("");
+    setUnit("g");
+    setType("ingredient");
+  }
+
+  return (
+    <section className="dishes-layout">
+      <article className="panel dish-form-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Fiche technique</p>
+            <h2>Ajouter un besoin</h2>
+          </div>
+        </div>
+
+        <form className="entity-form" onSubmit={handleSubmit}>
+          <label>
+            Plat
+            <select
+              value={selectedDishId}
+              onChange={(event) => setSelectedDishId(event.target.value)}
+            >
+              {activeDishes.length === 0 ? (
+                <option value="">Aucun plat actif</option>
+              ) : (
+                activeDishes.map((dish) => (
+                  <option key={dish.id} value={dish.id}>
+                    {dish.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+
+          <label>
+            Type
+            <select
+              value={type}
+              onChange={(event) =>
+                setType(event.target.value as "ingredient" | "consommable")
+              }
+            >
+              <option value="ingredient">Ingrédient</option>
+              <option value="consommable">Emballage / consommable</option>
+            </select>
+          </label>
+
+          <label>
+            Nom
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ex : poulet, riz, barquette"
+            />
+          </label>
+
+          <label>
+            Quantité exacte
+            <input
+              inputMode="decimal"
+              value={quantity}
+              onChange={(event) => setQuantity(event.target.value)}
+              placeholder="Ex : 150"
+            />
+          </label>
+
+          <label>
+            Unité
+            <select value={unit} onChange={(event) => setUnit(event.target.value)}>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+              <option value="unité">unité</option>
+            </select>
+          </label>
+
+          <button className="primary-action" type="submit">
+            Ajouter à la fiche
+          </button>
+        </form>
+      </article>
+
+      <article className="panel dishes-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Cahier des charges</p>
+            <h2>{selectedDish?.name || "Aucun plat"}</h2>
+          </div>
+          <span className="status-pill">{items.length}</span>
+        </div>
+
+        <div className="dish-list">
+          {items.length === 0 ? (
+            <div className="empty-state">
+              <strong>Aucune ligne</strong>
+              <p>Ajoute les ingrédients et consommables exacts du plat.</p>
+            </div>
+          ) : (
+            items.map((item) => (
+              <div className="dish-row" key={item.id}>
+                <div className="dish-photo">
+                  {item.type === "ingredient" ? "ING" : "CON"}
+                </div>
+
+                <div className="dish-info">
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>
+                      {item.type === "ingredient" ? "Ingrédient" : "Consommable"}
+                    </span>
+                  </div>
+                  <p>
+                    Quantité exacte : {item.quantity} {item.unit}
+                  </p>
+                </div>
+
+                <div className="dish-meta">
+                  <strong>{item.quantity}</strong>
+                  <span>{item.unit}</span>
+                </div>
+
+                <div className="dish-actions">
                   <button
                     className="delete-action"
-                    onClick={() => onDeleteMenu(menu.id)}
+                    onClick={() => onDeleteSpecItem(dishId, item.id)}
                   >
                     Supprimer
                   </button>
