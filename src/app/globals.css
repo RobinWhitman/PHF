@@ -144,7 +144,7 @@ button {
 
 .content {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
   height: 100vh;
   padding: 18px;
@@ -226,6 +226,7 @@ h2 {
   grid-template-rows: 1fr 1fr;
   gap: 10px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .panel {
@@ -257,7 +258,7 @@ h2 {
 .empty-state {
   display: grid;
   align-content: center;
-  min-height: 260px;
+  min-height: 180px;
   border: 1px dashed var(--border);
   border-radius: 8px;
   padding: 18px;
@@ -277,6 +278,12 @@ h2 {
   gap: 8px;
 }
 
+.setting-list {
+  max-height: 180px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
 .action-list button,
 .alert-list p,
 .setting-list p {
@@ -287,6 +294,17 @@ h2 {
   background: var(--surface-soft);
   color: var(--text);
   text-align: left;
+}
+
+.setting-list input {
+  width: 92px;
+  min-height: 32px;
+  margin-left: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text);
+  padding: 0 8px;
 }
 
 .login-page {
@@ -314,6 +332,12 @@ h2 {
 .entity-form {
   display: grid;
   gap: 12px;
+}
+
+.entity-form {
+  max-height: calc(100vh - 150px);
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .login-form label,
@@ -367,9 +391,10 @@ h2 {
 .settings-grid,
 .dishes-layout {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .setting-card {
@@ -380,19 +405,24 @@ h2 {
 
 .dish-form-panel,
 .dishes-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
 
 .dish-list {
   display: grid;
+  align-content: start;
   gap: 8px;
-  max-height: calc(100vh - 170px);
+  min-height: 0;
+  max-height: none;
   overflow: auto;
+  padding-right: 2px;
 }
 
 .dish-row {
   display: grid;
-  grid-template-columns: 54px 1fr auto auto;
+  grid-template-columns: 54px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
   padding: 10px;
@@ -425,6 +455,7 @@ h2 {
 .dish-info p {
   margin: 6px 0 0;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .dish-meta {
@@ -434,18 +465,32 @@ h2 {
   white-space: nowrap;
 }
 
-.toggle {
+.dish-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.toggle,
+.delete-action {
   min-height: 34px;
   padding: 0 10px;
   border-radius: 8px;
+  font-weight: 800;
+}
+
+.toggle {
   background: #2a1518;
   color: #fb7185;
-  font-weight: 800;
 }
 
 .toggle.active {
   background: var(--green-soft);
   color: var(--green);
+}
+
+.delete-action {
+  background: #26191a;
+  color: #fb7185;
 }
 
 .mobile-nav {
@@ -482,12 +527,13 @@ h2 {
   .metrics-grid,
   .settings-grid,
   .dishes-layout {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .work-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
+    overflow: visible;
   }
 
   .large-panel {
@@ -498,20 +544,32 @@ h2 {
     min-height: 150px;
   }
 
+  .entity-form,
+  .setting-list,
+  .dish-list {
+    max-height: none;
+    overflow: visible;
+  }
+
   .dish-row {
-    grid-template-columns: 46px 1fr;
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .dish-photo {
+    width: 46px;
+    height: 46px;
   }
 
   .dish-meta,
-  .toggle {
+  .dish-actions {
     grid-column: 2;
     justify-self: start;
     text-align: left;
   }
 
-  .dish-list {
-    max-height: none;
-    overflow: visible;
+  .dish-actions {
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .mobile-nav {
@@ -555,7 +613,6 @@ h2 {
   .metrics-grid,
   .settings-grid,
   .dishes-layout {
-    grid-template-columns: 1fr;
     gap: 8px;
   }
 
@@ -570,60 +627,5 @@ h2 {
 
   .panel {
     padding: 10px;
-  }
-}
-.dish-row {
-  display: grid;
-  grid-template-columns: 54px 1fr auto auto;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--surface-soft);
-}
-
-.dish-actions {
-  display: grid;
-  gap: 6px;
-}
-
-.toggle,
-.delete-action {
-  min-height: 34px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-weight: 800;
-}
-
-.toggle {
-  background: #2a1518;
-  color: #fb7185;
-}
-
-.toggle.active {
-  background: var(--green-soft);
-  color: var(--green);
-}
-
-.delete-action {
-  background: #26191a;
-  color: #fb7185;
-}
-
-@media (max-width: 860px) {
-  .dish-row {
-    grid-template-columns: 46px 1fr;
-  }
-
-  .dish-meta,
-  .dish-actions {
-    grid-column: 2;
-    justify-self: start;
-    text-align: left;
-  }
-
-  .dish-actions {
-    display: flex;
-    flex-wrap: wrap;
   }
 }
