@@ -20,6 +20,14 @@ type Dish = {
   active: boolean;
 };
 
+type WeeklyMenu = {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  dishIds: number[];
+};
+
 const users: User[] = [
   { name: "Robin", role: "admin", pin: "2323" },
   { name: "Patrice", role: "associe", pin: "1644" },
@@ -75,11 +83,13 @@ export default function Home() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [dishes, setDishes] = useState<Dish[]>(initialDishes);
+  const [menus, setMenus] = useState<WeeklyMenu[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
-    const user = users.find((item) => item.name === savedUser);
     const savedDishes = window.localStorage.getItem("phf-dishes");
+    const savedMenus = window.localStorage.getItem("phf-menus");
+    const user = users.find((item) => item.name === savedUser);
 
     if (user) {
       setCurrentUser(user);
@@ -89,14 +99,19 @@ export default function Home() {
       setDishes(JSON.parse(savedDishes));
     }
 
+    if (savedMenus) {
+      setMenus(JSON.parse(savedMenus));
+    }
+
     setIsReady(true);
   }, []);
 
   useEffect(() => {
     if (isReady) {
       window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
+      window.localStorage.setItem("phf-menus", JSON.stringify(menus));
     }
-  }, [dishes, isReady]);
+  }, [dishes, menus, isReady]);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -126,13 +141,7 @@ export default function Home() {
   }
 
   function addDish(dish: Omit<Dish, "id">) {
-    setDishes((currentDishes) => [
-      {
-        ...dish,
-        id: Date.now(),
-      },
-      ...currentDishes,
-    ]);
+    setDishes((currentDishes) => [{ ...dish, id: Date.now() }, ...currentDishes]);
   }
 
   function toggleDish(id: number) {
@@ -147,6 +156,21 @@ export default function Home() {
     setDishes((currentDishes) =>
       currentDishes.filter((dish) => dish.id !== id)
     );
+
+    setMenus((currentMenus) =>
+      currentMenus.map((menu) => ({
+        ...menu,
+        dishIds: menu.dishIds.filter((dishId) => dishId !== id),
+      }))
+    );
+  }
+
+  function addMenu(menu: Omit<WeeklyMenu, "id">) {
+    setMenus((currentMenus) => [{ ...menu, id: Date.now() }, ...currentMenus]);
+  }
+
+  function deleteMenu(id: number) {
+    setMenus((currentMenus) => currentMenus.filter((menu) => menu.id !== id));
   }
 
   if (!isReady) {
@@ -259,7 +283,7 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 5</p>
+            <p className="eyebrow">Macro Sprint 6</p>
             <h1>{activeModule}</h1>
           </div>
 
@@ -279,6 +303,13 @@ export default function Home() {
             onAddDish={addDish}
             onDeleteDish={deleteDish}
             onToggleDish={toggleDish}
+          />
+        ) : activeModule === "Menus" ? (
+          <MenusView
+            dishes={dishes}
+            menus={menus}
+            onAddMenu={addMenu}
+            onDeleteMenu={deleteMenu}
           />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
@@ -532,6 +563,199 @@ function DishesView({
   );
 }
 
+function MenusView({
+  dishes,
+  menus,
+  onAddMenu,
+  onDeleteMenu,
+}: {
+  dishes: Dish[];
+  menus: WeeklyMenu[];
+  onAddMenu: (menu: Omit<WeeklyMenu, "id">) => void;
+  onDeleteMenu: (id: number) => void;
+}) {
+  const activeDishes = dishes.filter((dish) => dish.active);
+  const [name, setName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedDishId, setSelectedDishId] = useState("");
+  const [dishIds, setDishIds] = useState<number[]>([]);
+
+  function addDishToMenu() {
+    const dishId = Number(selectedDishId);
+
+    if (!dishId || dishIds.includes(dishId)) {
+      return;
+    }
+
+    setDishIds((currentIds) => [...currentIds, dishId]);
+    setSelectedDishId("");
+  }
+
+  function removeDishFromMenu(dishId: number) {
+    setDishIds((currentIds) => currentIds.filter((id) => id !== dishId));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!name.trim() || !startDate || !endDate || dishIds.length === 0) {
+      return;
+    }
+
+    onAddMenu({
+      name,
+      startDate,
+      endDate,
+      dishIds,
+    });
+
+    setName("");
+    setStartDate("");
+    setEndDate("");
+    setSelectedDishId("");
+    setDishIds([]);
+  }
+
+  return (
+    <section className="dishes-layout">
+      <article className="panel dish-form-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Planification</p>
+            <h2>Nouveau menu</h2>
+          </div>
+        </div>
+
+        <form className="entity-form" onSubmit={handleSubmit}>
+          <label>
+            Nom du menu
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ex : Semaine du 15 juillet"
+            />
+          </label>
+
+          <label>
+            Date de début
+            <input
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Date de fin
+            <input
+              type="date"
+              value={endDate}
+              onChange={(event) => setEndDate(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Ajouter un plat
+            <select
+              value={selectedDishId}
+              onChange={(event) => setSelectedDishId(event.target.value)}
+            >
+              <option value="">Choisir un plat actif</option>
+              {activeDishes.map((dish) => (
+                <option key={dish.id} value={dish.id}>
+                  {dish.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button className="primary-action" type="button" onClick={addDishToMenu}>
+            Ajouter au menu
+          </button>
+
+          <div className="setting-list">
+            {dishIds.length === 0 ? (
+              <p>Aucun plat sélectionné.</p>
+            ) : (
+              dishIds.map((dishId) => {
+                const dish = dishes.find((item) => item.id === dishId);
+
+                return (
+                  <p key={dishId}>
+                    {dish?.name || "Plat supprimé"}{" "}
+                    <button
+                      className="delete-action"
+                      type="button"
+                      onClick={() => removeDishFromMenu(dishId)}
+                    >
+                      Retirer
+                    </button>
+                  </p>
+                );
+              })
+            )}
+          </div>
+
+          <button className="primary-action" type="submit">
+            Créer le menu
+          </button>
+        </form>
+      </article>
+
+      <article className="panel dishes-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Semaines</p>
+            <h2>Menus créés</h2>
+          </div>
+          <span className="status-pill">{menus.length}</span>
+        </div>
+
+        <div className="dish-list">
+          {menus.length === 0 ? (
+            <div className="empty-state">
+              <strong>Aucun menu</strong>
+              <p>Crée un menu hebdomadaire avec ses dates et ses plats.</p>
+            </div>
+          ) : (
+            menus.map((menu) => (
+              <div className="dish-row" key={menu.id}>
+                <div className="dish-photo">{isMenuActive(menu) ? "ON" : "OFF"}</div>
+
+                <div className="dish-info">
+                  <div>
+                    <strong>{menu.name}</strong>
+                    <span>{isMenuActive(menu) ? "Actif" : "Inactif"}</span>
+                  </div>
+                  <p>
+                    Du {formatDate(menu.startDate)} au {formatDate(menu.endDate)}
+                  </p>
+                  <p>{getMenuDishNames(menu, dishes)}</p>
+                </div>
+
+                <div className="dish-meta">
+                  <strong>{menu.dishIds.length}</strong>
+                  <span>plats</span>
+                </div>
+
+                <div className="dish-actions">
+                  <button
+                    className="delete-action"
+                    onClick={() => onDeleteMenu(menu.id)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </article>
+    </section>
+  );
+}
+
 function SettingsView() {
   return (
     <section className="settings-grid">
@@ -579,4 +803,22 @@ function SettingsView() {
       </article>
     </section>
   );
+}
+
+function isMenuActive(menu: WeeklyMenu) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  return today >= menu.startDate && today <= menu.endDate;
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("fr-FR").format(new Date(value));
+}
+
+function getMenuDishNames(menu: WeeklyMenu, dishes: Dish[]) {
+  const names = menu.dishIds
+    .map((dishId) => dishes.find((dish) => dish.id === dishId)?.name)
+    .filter(Boolean);
+
+  return names.length > 0 ? names.join(", ") : "Aucun plat.";
 }
