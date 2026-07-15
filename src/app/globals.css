@@ -44,6 +44,8 @@ button {
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -144,18 +146,21 @@ button {
 
 .content {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
-  height: 100vh;
+  min-height: 100vh;
   padding: 18px;
-  overflow: hidden;
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 12px;
+  background: var(--background);
 }
 
 .eyebrow {
@@ -223,14 +228,11 @@ h2 {
 .work-grid {
   display: grid;
   grid-template-columns: 1.4fr 0.8fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: auto auto;
   gap: 10px;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .panel {
-  min-height: 0;
   padding: 14px;
 }
 
@@ -276,12 +278,6 @@ h2 {
 .setting-list {
   display: grid;
   gap: 8px;
-}
-
-.setting-list {
-  max-height: 180px;
-  overflow: auto;
-  padding-right: 2px;
 }
 
 .action-list button,
@@ -332,12 +328,6 @@ h2 {
 .entity-form {
   display: grid;
   gap: 12px;
-}
-
-.entity-form {
-  max-height: calc(100vh - 150px);
-  overflow: auto;
-  padding-right: 2px;
 }
 
 .login-form label,
@@ -391,10 +381,9 @@ h2 {
 .settings-grid,
 .dishes-layout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  align-items: start;
   gap: 10px;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .setting-card {
@@ -405,19 +394,12 @@ h2 {
 
 .dish-form-panel,
 .dishes-panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
+  min-width: 0;
 }
 
 .dish-list {
   display: grid;
-  align-content: start;
   gap: 8px;
-  min-height: 0;
-  max-height: none;
-  overflow: auto;
-  padding-right: 2px;
 }
 
 .dish-row {
@@ -448,6 +430,7 @@ h2 {
 
 .dish-info div {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: baseline;
 }
@@ -497,6 +480,13 @@ h2 {
   display: none;
 }
 
+@media (max-width: 980px) {
+  .settings-grid,
+  .dishes-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 860px) {
   .app-layout {
     display: block;
@@ -509,9 +499,7 @@ h2 {
   }
 
   .content {
-    height: auto;
     min-height: calc(100vh - 64px);
-    overflow: visible;
     padding: 14px;
   }
 
@@ -524,16 +512,13 @@ h2 {
     width: 100%;
   }
 
-  .metrics-grid,
-  .settings-grid,
-  .dishes-layout {
-    grid-template-columns: 1fr;
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .work-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
-    overflow: visible;
   }
 
   .large-panel {
@@ -542,13 +527,6 @@ h2 {
 
   .empty-state {
     min-height: 150px;
-  }
-
-  .entity-form,
-  .setting-list,
-  .dish-list {
-    max-height: none;
-    overflow: visible;
   }
 
   .dish-row {
@@ -610,9 +588,7 @@ h2 {
     padding: 10px;
   }
 
-  .metrics-grid,
-  .settings-grid,
-  .dishes-layout {
+  .metrics-grid {
     gap: 8px;
   }
 
