@@ -572,3 +572,58 @@ h2 {
     padding: 10px;
   }
 }
+.dish-row {
+  display: grid;
+  grid-template-columns: 54px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.dish-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.toggle,
+.delete-action {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.toggle {
+  background: #2a1518;
+  color: #fb7185;
+}
+
+.toggle.active {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.delete-action {
+  background: #26191a;
+  color: #fb7185;
+}
+
+@media (max-width: 860px) {
+  .dish-row {
+    grid-template-columns: 46px 1fr;
+  }
+
+  .dish-meta,
+  .dish-actions {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+
+  .dish-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}

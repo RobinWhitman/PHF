@@ -79,13 +79,24 @@ export default function Home() {
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
     const user = users.find((item) => item.name === savedUser);
+    const savedDishes = window.localStorage.getItem("phf-dishes");
 
     if (user) {
       setCurrentUser(user);
     }
 
+    if (savedDishes) {
+      setDishes(JSON.parse(savedDishes));
+    }
+
     setIsReady(true);
   }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
+    }
+  }, [dishes, isReady]);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,6 +140,12 @@ export default function Home() {
       currentDishes.map((dish) =>
         dish.id === id ? { ...dish, active: !dish.active } : dish
       )
+    );
+  }
+
+  function deleteDish(id: number) {
+    setDishes((currentDishes) =>
+      currentDishes.filter((dish) => dish.id !== id)
     );
   }
 
@@ -246,7 +263,10 @@ export default function Home() {
             <h1>{activeModule}</h1>
           </div>
 
-          <button className="primary-action" onClick={() => setActiveModule("Ventes")}>
+          <button
+            className="primary-action"
+            onClick={() => setActiveModule("Ventes")}
+          >
             Nouvelle vente
           </button>
         </header>
@@ -254,7 +274,12 @@ export default function Home() {
         {activeModule === "Paramètres" && isAdmin ? (
           <SettingsView />
         ) : activeModule === "Plats" ? (
-          <DishesView dishes={dishes} onAddDish={addDish} onToggleDish={toggleDish} />
+          <DishesView
+            dishes={dishes}
+            onAddDish={addDish}
+            onDeleteDish={deleteDish}
+            onToggleDish={toggleDish}
+          />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
         )}
@@ -344,10 +369,12 @@ function DashboardView({
 function DishesView({
   dishes,
   onAddDish,
+  onDeleteDish,
   onToggleDish,
 }: {
   dishes: Dish[];
   onAddDish: (dish: Omit<Dish, "id">) => void;
+  onDeleteDish: (id: number) => void;
   onToggleDish: (id: number) => void;
 }) {
   const [name, setName] = useState("");
@@ -459,7 +486,7 @@ function DishesView({
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Plats</p>
-            <h2>Liste active</h2>
+            <h2>Liste des plats</h2>
           </div>
           <span className="status-pill">{dishes.length}</span>
         </div>
@@ -467,9 +494,7 @@ function DishesView({
         <div className="dish-list">
           {dishes.map((dish) => (
             <div className="dish-row" key={dish.id}>
-              <div className="dish-photo">
-                {dish.photo ? "Photo" : "PHF"}
-              </div>
+              <div className="dish-photo">{dish.photo ? "Photo" : "PHF"}</div>
 
               <div className="dish-info">
                 <div>
@@ -484,12 +509,21 @@ function DishesView({
                 <span>TVA {dish.vat} %</span>
               </div>
 
-              <button
-                className={dish.active ? "toggle active" : "toggle"}
-                onClick={() => onToggleDish(dish.id)}
-              >
-                {dish.active ? "Actif" : "Inactif"}
-              </button>
+              <div className="dish-actions">
+                <button
+                  className={dish.active ? "toggle active" : "toggle"}
+                  onClick={() => onToggleDish(dish.id)}
+                >
+                  {dish.active ? "Actif" : "Inactif"}
+                </button>
+
+                <button
+                  className="delete-action"
+                  onClick={() => onDeleteDish(dish.id)}
+                >
+                  Supprimer
+                </button>
+              </div>
             </div>
           ))}
         </div>
