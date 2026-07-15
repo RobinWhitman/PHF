@@ -9,6 +9,17 @@ type User = {
   pin: string;
 };
 
+type Dish = {
+  id: number;
+  name: string;
+  price: string;
+  category: string;
+  vat: string;
+  description: string;
+  photo: string;
+  active: boolean;
+};
+
 const users: User[] = [
   { name: "Robin", role: "admin", pin: "2323" },
   { name: "Patrice", role: "associe", pin: "1644" },
@@ -17,6 +28,7 @@ const users: User[] = [
 
 const navItems = [
   "Dashboard",
+  "Plats",
   "Menus",
   "Production",
   "Courses",
@@ -42,6 +54,19 @@ const settings = {
   purchaseCategories: ["Ingrédients", "Emballages", "Charges"],
 };
 
+const initialDishes: Dish[] = [
+  {
+    id: 1,
+    name: "Shawarma Bowl",
+    price: "12.90",
+    category: "Plats",
+    vat: "5.5",
+    description: "Poulet, riz, crudités et sauce maison.",
+    photo: "",
+    active: true,
+  },
+];
+
 export default function Home() {
   const [isReady, setIsReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -49,6 +74,7 @@ export default function Home() {
   const [activeModule, setActiveModule] = useState("Dashboard");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [dishes, setDishes] = useState<Dish[]>(initialDishes);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
@@ -86,6 +112,24 @@ export default function Home() {
     setActiveModule("Dashboard");
     setPin("");
     setError("");
+  }
+
+  function addDish(dish: Omit<Dish, "id">) {
+    setDishes((currentDishes) => [
+      {
+        ...dish,
+        id: Date.now(),
+      },
+      ...currentDishes,
+    ]);
+  }
+
+  function toggleDish(id: number) {
+    setDishes((currentDishes) =>
+      currentDishes.map((dish) =>
+        dish.id === id ? { ...dish, active: !dish.active } : dish
+      )
+    );
   }
 
   if (!isReady) {
@@ -198,22 +242,26 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 4</p>
+            <p className="eyebrow">Macro Sprint 5</p>
             <h1>{activeModule}</h1>
           </div>
 
-          <button className="primary-action">Nouvelle vente</button>
+          <button className="primary-action" onClick={() => setActiveModule("Ventes")}>
+            Nouvelle vente
+          </button>
         </header>
 
         {activeModule === "Paramètres" && isAdmin ? (
           <SettingsView />
+        ) : activeModule === "Plats" ? (
+          <DishesView dishes={dishes} onAddDish={addDish} onToggleDish={toggleDish} />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
         )}
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Menus", "Stocks", "Ventes", "TVA"].map((item) => (
+        {["Dashboard", "Plats", "Menus", "Stocks", "Ventes"].map((item) => (
           <button
             className={activeModule === item ? "active" : ""}
             key={item}
@@ -290,6 +338,163 @@ function DashboardView({
         </article>
       </section>
     </>
+  );
+}
+
+function DishesView({
+  dishes,
+  onAddDish,
+  onToggleDish,
+}: {
+  dishes: Dish[];
+  onAddDish: (dish: Omit<Dish, "id">) => void;
+  onToggleDish: (id: number) => void;
+}) {
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState(settings.dishCategories[0]);
+  const [vat, setVat] = useState("5.5");
+  const [description, setDescription] = useState("");
+  const [photo, setPhoto] = useState("");
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!name.trim() || !price.trim()) {
+      return;
+    }
+
+    onAddDish({
+      name,
+      price,
+      category,
+      vat,
+      description,
+      photo,
+      active: true,
+    });
+
+    setName("");
+    setPrice("");
+    setCategory(settings.dishCategories[0]);
+    setVat("5.5");
+    setDescription("");
+    setPhoto("");
+  }
+
+  return (
+    <section className="dishes-layout">
+      <article className="panel dish-form-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Catalogue</p>
+            <h2>Nouveau plat</h2>
+          </div>
+        </div>
+
+        <form className="entity-form" onSubmit={handleSubmit}>
+          <label>
+            Nom
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ex : Shawarma Bowl"
+            />
+          </label>
+
+          <label>
+            Prix TTC
+            <input
+              inputMode="decimal"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+              placeholder="Ex : 12.90"
+            />
+          </label>
+
+          <label>
+            Catégorie
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
+              {settings.dishCategories.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            TVA
+            <select value={vat} onChange={(event) => setVat(event.target.value)}>
+              <option value="5.5">5,5 %</option>
+            </select>
+          </label>
+
+          <label>
+            Photo
+            <input
+              value={photo}
+              onChange={(event) => setPhoto(event.target.value)}
+              placeholder="Lien image provisoire"
+            />
+          </label>
+
+          <label>
+            Description
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Composition rapide du plat"
+            />
+          </label>
+
+          <button className="primary-action" type="submit">
+            Ajouter le plat
+          </button>
+        </form>
+      </article>
+
+      <article className="panel dishes-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Plats</p>
+            <h2>Liste active</h2>
+          </div>
+          <span className="status-pill">{dishes.length}</span>
+        </div>
+
+        <div className="dish-list">
+          {dishes.map((dish) => (
+            <div className="dish-row" key={dish.id}>
+              <div className="dish-photo">
+                {dish.photo ? "Photo" : "PHF"}
+              </div>
+
+              <div className="dish-info">
+                <div>
+                  <strong>{dish.name}</strong>
+                  <span>{dish.category}</span>
+                </div>
+                <p>{dish.description || "Aucune description."}</p>
+              </div>
+
+              <div className="dish-meta">
+                <strong>{dish.price} €</strong>
+                <span>TVA {dish.vat} %</span>
+              </div>
+
+              <button
+                className={dish.active ? "toggle active" : "toggle"}
+                onClick={() => onToggleDish(dish.id)}
+              >
+                {dish.active ? "Actif" : "Inactif"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </article>
+    </section>
   );
 }
 
