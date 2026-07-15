@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
-type User = {
-  name: string;
-  role: "admin" | "associe";
-  pin: string;
-};
-
+type User = { name: string; role: "admin" | "associe"; pin: string };
 type Dish = {
   id: number;
   name: string;
@@ -19,7 +14,6 @@ type Dish = {
   photo: string;
   active: boolean;
 };
-
 type WeeklyMenu = {
   id: number;
   name: string;
@@ -27,7 +21,6 @@ type WeeklyMenu = {
   endDate: string;
   dishIds: number[];
 };
-
 type SpecItem = {
   id: number;
   name: string;
@@ -35,22 +28,19 @@ type SpecItem = {
   unit: string;
   type: "ingredient" | "consommable";
 };
-
-type DishSpec = {
-  dishId: number;
-  items: SpecItem[];
-};
-
-type ProductionLine = {
-  dishId: number;
-  portions: string;
-};
-
+type DishSpec = { dishId: number; items: SpecItem[] };
+type ProductionLine = { dishId: number; portions: string };
 type ProductionPlan = {
   id: number;
   name: string;
   date: string;
   lines: ProductionLine[];
+};
+type ShoppingNeed = {
+  name: string;
+  quantity: string;
+  unit: string;
+  type: "ingredient" | "consommable";
 };
 
 const users: User[] = [
@@ -135,10 +125,7 @@ export default function Home() {
       window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
       window.localStorage.setItem("phf-menus", JSON.stringify(menus));
       window.localStorage.setItem("phf-specs", JSON.stringify(specs));
-      window.localStorage.setItem(
-        "phf-productions",
-        JSON.stringify(productions)
-      );
+      window.localStorage.setItem("phf-productions", JSON.stringify(productions));
     }
   }, [dishes, menus, specs, productions, isReady]);
 
@@ -170,10 +157,7 @@ export default function Home() {
   }
 
   function addDish(dish: Omit<Dish, "id">) {
-    setDishes((currentDishes) => [
-      { ...dish, id: Date.now() },
-      ...currentDishes,
-    ]);
+    setDishes((currentDishes) => [{ ...dish, id: Date.now() }, ...currentDishes]);
   }
 
   function toggleDish(id: number) {
@@ -237,10 +221,7 @@ export default function Home() {
     setSpecs((currentSpecs) =>
       currentSpecs.map((spec) =>
         spec.dishId === dishId
-          ? {
-              ...spec,
-              items: spec.items.filter((item) => item.id !== itemId),
-            }
+          ? { ...spec, items: spec.items.filter((item) => item.id !== itemId) }
           : spec
       )
     );
@@ -369,7 +350,7 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 8</p>
+            <p className="eyebrow">Macro Sprint 9</p>
             <h1>{activeModule}</h1>
           </div>
 
@@ -413,13 +394,19 @@ export default function Home() {
             onAddProduction={addProduction}
             onDeleteProduction={deleteProduction}
           />
+        ) : activeModule === "Courses" ? (
+          <ShoppingListView
+            dishes={dishes}
+            specs={specs}
+            productions={productions}
+          />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
         )}
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Plats", "Menus", "Production", "Ventes"].map((item) => (
+        {["Dashboard", "Plats", "Production", "Courses", "Ventes"].map((item) => (
           <button
             className={activeModule === item ? "active" : ""}
             key={item}
@@ -522,15 +509,7 @@ function DishesView({
 
     if (!name.trim() || !price.trim()) return;
 
-    onAddDish({
-      name,
-      price,
-      category,
-      vat,
-      description,
-      photo,
-      active: true,
-    });
+    onAddDish({ name, price, category, vat, description, photo, active: true });
 
     setName("");
     setPrice("");
@@ -854,12 +833,7 @@ function SpecsView({
 
     if (!dishId || !name.trim() || !quantity.trim() || !unit.trim()) return;
 
-    onAddSpecItem(dishId, {
-      name,
-      quantity,
-      unit,
-      type,
-    });
+    onAddSpecItem(dishId, { name, quantity, unit, type });
 
     setName("");
     setQuantity("");
@@ -1029,12 +1003,7 @@ function ProductionView({
 
     if (!menu) return;
 
-    const nextLines = menu.dishIds.map((dishId) => ({
-      dishId,
-      portions: "",
-    }));
-
-    setLines(nextLines);
+    setLines(menu.dishIds.map((dishId) => ({ dishId, portions: "" })));
     setName(menu.name);
   }
 
@@ -1080,11 +1049,7 @@ function ProductionView({
 
     if (!name.trim() || !date || validLines.length === 0) return;
 
-    onAddProduction({
-      name,
-      date,
-      lines: validLines,
-    });
+    onAddProduction({ name, date, lines: validLines });
 
     setName("");
     setDate(new Date().toISOString().slice(0, 10));
@@ -1259,6 +1224,145 @@ function ProductionView({
   );
 }
 
+function ShoppingListView({
+  dishes,
+  specs,
+  productions,
+}: {
+  dishes: Dish[];
+  specs: DishSpec[];
+  productions: ProductionPlan[];
+}) {
+  const [selectedProductionId, setSelectedProductionId] = useState("");
+
+  const selectedProduction =
+    productions.find((production) => production.id === Number(selectedProductionId)) ||
+    productions[0];
+
+  const needs = selectedProduction
+    ? getShoppingNeeds(selectedProduction, specs)
+    : [];
+
+  const ingredients = needs.filter((need) => need.type === "ingredient");
+  const consumables = needs.filter((need) => need.type === "consommable");
+
+  return (
+    <section className="dishes-layout">
+      <article className="panel dish-form-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Calcul théorique</p>
+            <h2>Production source</h2>
+          </div>
+        </div>
+
+        <form className="entity-form">
+          <label>
+            Production
+            <select
+              value={selectedProduction?.id || ""}
+              onChange={(event) => setSelectedProductionId(event.target.value)}
+            >
+              {productions.length === 0 ? (
+                <option value="">Aucune production</option>
+              ) : (
+                productions.map((production) => (
+                  <option key={production.id} value={production.id}>
+                    {production.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+
+          <div className="setting-list">
+            {selectedProduction ? (
+              <>
+                <p>Date : {formatDate(selectedProduction.date)}</p>
+                <p>{getProductionDishSummary(selectedProduction, dishes)}</p>
+                <p>Aucun arrondi appliqué.</p>
+              </>
+            ) : (
+              <p>Crée d’abord une production.</p>
+            )}
+          </div>
+        </form>
+      </article>
+
+      <article className="panel dishes-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Liste de courses</p>
+            <h2>Quantités exactes</h2>
+          </div>
+          <span className="status-pill">{needs.length}</span>
+        </div>
+
+        <div className="dish-list">
+          {!selectedProduction ? (
+            <div className="empty-state">
+              <strong>Aucune production</strong>
+              <p>La liste de courses sera calculée depuis une production.</p>
+            </div>
+          ) : (
+            <>
+              <ShoppingSection title="Ingrédients" items={ingredients} />
+              <ShoppingSection title="Emballages / consommables" items={consumables} />
+            </>
+          )}
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function ShoppingSection({
+  title,
+  items,
+}: {
+  title: string;
+  items: ShoppingNeed[];
+}) {
+  return (
+    <div className="panel">
+      <div className="panel-heading">
+        <h2>{title}</h2>
+        <span className="status-pill">{items.length}</span>
+      </div>
+
+      <div className="dish-list">
+        {items.length === 0 ? (
+          <div className="empty-state">
+            <strong>Aucune ligne</strong>
+            <p>Rien à calculer pour cette catégorie.</p>
+          </div>
+        ) : (
+          items.map((item) => (
+            <div className="dish-row" key={`${item.type}-${item.name}-${item.unit}`}>
+              <div className="dish-photo">
+                {item.type === "ingredient" ? "ING" : "CON"}
+              </div>
+
+              <div className="dish-info">
+                <div>
+                  <strong>{item.name}</strong>
+                  <span>{item.type === "ingredient" ? "Ingrédient" : "Consommable"}</span>
+                </div>
+                <p>Quantité théorique exacte</p>
+              </div>
+
+              <div className="dish-meta">
+                <strong>{item.quantity}</strong>
+                <span>{item.unit}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SettingsView() {
   return (
     <section className="settings-grid">
@@ -1310,7 +1414,6 @@ function SettingsView() {
 
 function isMenuActive(menu: WeeklyMenu) {
   const today = new Date().toISOString().slice(0, 10);
-
   return today >= menu.startDate && today <= menu.endDate;
 }
 
@@ -1348,12 +1451,44 @@ function getProductionNeedsSummary(
 
     return spec.items.map((item) => {
       const total = multiplyDecimalStrings(item.quantity, line.portions);
-
       return `${item.name} : ${total} ${item.unit}`;
     });
   });
 
   return needs.length > 0 ? needs.join(" | ") : "Aucun besoin calculable.";
+}
+
+function getShoppingNeeds(production: ProductionPlan, specs: DishSpec[]) {
+  const totals: Record<string, ShoppingNeed> = {};
+
+  production.lines.forEach((line) => {
+    const spec = specs.find((item) => item.dishId === line.dishId);
+
+    if (!spec) return;
+
+    spec.items.forEach((item) => {
+      const quantity = multiplyDecimalStrings(item.quantity, line.portions);
+      const key = `${item.type}-${normalizeText(item.name)}-${item.unit}`;
+
+      if (!totals[key]) {
+        totals[key] = {
+          name: item.name,
+          quantity,
+          unit: item.unit,
+          type: item.type,
+        };
+        return;
+      }
+
+      totals[key].quantity = addDecimalStrings(totals[key].quantity, quantity);
+    });
+  });
+
+  return Object.values(totals).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function normalizeText(value: string) {
+  return value.trim().toLowerCase();
 }
 
 function multiplyDecimalStrings(quantity: string, multiplier: string) {
@@ -1373,9 +1508,39 @@ function multiplyDecimalStrings(quantity: string, multiplier: string) {
 
   const result = (quantityInteger * multiplierInteger).toString();
 
-  if (totalDecimals === 0) {
-    return result;
+  if (totalDecimals === 0) return result;
+
+  const paddedResult = result.padStart(totalDecimals + 1, "0");
+  const integerPart = paddedResult.slice(0, -totalDecimals);
+  const decimalPart = paddedResult.slice(-totalDecimals).replace(/0+$/, "");
+
+  return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+}
+
+function addDecimalStrings(first: string, second: string) {
+  const cleanFirst = first.replace(",", ".").trim();
+  const cleanSecond = second.replace(",", ".").trim();
+
+  const firstDecimals = cleanFirst.split(".")[1]?.length || 0;
+  const secondDecimals = cleanSecond.split(".")[1]?.length || 0;
+  const totalDecimals = Math.max(firstDecimals, secondDecimals);
+
+  const firstInteger = Number(cleanFirst.replace(".", "").padEnd(
+    cleanFirst.replace(".", "").length + totalDecimals - firstDecimals,
+    "0"
+  ));
+  const secondInteger = Number(cleanSecond.replace(".", "").padEnd(
+    cleanSecond.replace(".", "").length + totalDecimals - secondDecimals,
+    "0"
+  ));
+
+  if (Number.isNaN(firstInteger) || Number.isNaN(secondInteger)) {
+    return "0";
   }
+
+  const result = (firstInteger + secondInteger).toString();
+
+  if (totalDecimals === 0) return result;
 
   const paddedResult = result.padStart(totalDecimals + 1, "0");
   const integerPart = paddedResult.slice(0, -totalDecimals);
