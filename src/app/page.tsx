@@ -41,6 +41,18 @@ type DishSpec = {
   items: SpecItem[];
 };
 
+type ProductionLine = {
+  dishId: number;
+  portions: string;
+};
+
+type ProductionPlan = {
+  id: number;
+  name: string;
+  date: string;
+  lines: ProductionLine[];
+};
+
 const users: User[] = [
   { name: "Robin", role: "admin", pin: "2323" },
   { name: "Patrice", role: "associe", pin: "1644" },
@@ -99,18 +111,21 @@ export default function Home() {
   const [dishes, setDishes] = useState<Dish[]>(initialDishes);
   const [menus, setMenus] = useState<WeeklyMenu[]>([]);
   const [specs, setSpecs] = useState<DishSpec[]>([]);
+  const [productions, setProductions] = useState<ProductionPlan[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
     const savedDishes = window.localStorage.getItem("phf-dishes");
     const savedMenus = window.localStorage.getItem("phf-menus");
     const savedSpecs = window.localStorage.getItem("phf-specs");
+    const savedProductions = window.localStorage.getItem("phf-productions");
     const user = users.find((item) => item.name === savedUser);
 
     if (user) setCurrentUser(user);
     if (savedDishes) setDishes(JSON.parse(savedDishes));
     if (savedMenus) setMenus(JSON.parse(savedMenus));
     if (savedSpecs) setSpecs(JSON.parse(savedSpecs));
+    if (savedProductions) setProductions(JSON.parse(savedProductions));
 
     setIsReady(true);
   }, []);
@@ -120,8 +135,12 @@ export default function Home() {
       window.localStorage.setItem("phf-dishes", JSON.stringify(dishes));
       window.localStorage.setItem("phf-menus", JSON.stringify(menus));
       window.localStorage.setItem("phf-specs", JSON.stringify(specs));
+      window.localStorage.setItem(
+        "phf-productions",
+        JSON.stringify(productions)
+      );
     }
-  }, [dishes, menus, specs, isReady]);
+  }, [dishes, menus, specs, productions, isReady]);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -151,7 +170,10 @@ export default function Home() {
   }
 
   function addDish(dish: Omit<Dish, "id">) {
-    setDishes((currentDishes) => [{ ...dish, id: Date.now() }, ...currentDishes]);
+    setDishes((currentDishes) => [
+      { ...dish, id: Date.now() },
+      ...currentDishes,
+    ]);
   }
 
   function toggleDish(id: number) {
@@ -176,6 +198,13 @@ export default function Home() {
 
     setSpecs((currentSpecs) =>
       currentSpecs.filter((spec) => spec.dishId !== id)
+    );
+
+    setProductions((currentProductions) =>
+      currentProductions.map((production) => ({
+        ...production,
+        lines: production.lines.filter((line) => line.dishId !== id),
+      }))
     );
   }
 
@@ -214,6 +243,19 @@ export default function Home() {
             }
           : spec
       )
+    );
+  }
+
+  function addProduction(production: Omit<ProductionPlan, "id">) {
+    setProductions((currentProductions) => [
+      { ...production, id: Date.now() },
+      ...currentProductions,
+    ]);
+  }
+
+  function deleteProduction(id: number) {
+    setProductions((currentProductions) =>
+      currentProductions.filter((production) => production.id !== id)
     );
   }
 
@@ -327,7 +369,7 @@ export default function Home() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 7</p>
+            <p className="eyebrow">Macro Sprint 8</p>
             <h1>{activeModule}</h1>
           </div>
 
@@ -362,13 +404,22 @@ export default function Home() {
             onAddSpecItem={addSpecItem}
             onDeleteSpecItem={deleteSpecItem}
           />
+        ) : activeModule === "Production" ? (
+          <ProductionView
+            dishes={dishes}
+            specs={specs}
+            menus={menus}
+            productions={productions}
+            onAddProduction={addProduction}
+            onDeleteProduction={deleteProduction}
+          />
         ) : (
           <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
         )}
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Plats", "Menus", "Cahiers", "Ventes"].map((item) => (
+        {["Dashboard", "Plats", "Menus", "Production", "Ventes"].map((item) => (
           <button
             className={activeModule === item ? "active" : ""}
             key={item}
@@ -950,6 +1001,264 @@ function SpecsView({
   );
 }
 
+function ProductionView({
+  dishes,
+  specs,
+  menus,
+  productions,
+  onAddProduction,
+  onDeleteProduction,
+}: {
+  dishes: Dish[];
+  specs: DishSpec[];
+  menus: WeeklyMenu[];
+  productions: ProductionPlan[];
+  onAddProduction: (production: Omit<ProductionPlan, "id">) => void;
+  onDeleteProduction: (id: number) => void;
+}) {
+  const activeDishes = dishes.filter((dish) => dish.active);
+  const [name, setName] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedMenuId, setSelectedMenuId] = useState("");
+  const [selectedDishId, setSelectedDishId] = useState("");
+  const [portions, setPortions] = useState("");
+  const [lines, setLines] = useState<ProductionLine[]>([]);
+
+  function loadMenu() {
+    const menu = menus.find((item) => item.id === Number(selectedMenuId));
+
+    if (!menu) return;
+
+    const nextLines = menu.dishIds.map((dishId) => ({
+      dishId,
+      portions: "",
+    }));
+
+    setLines(nextLines);
+    setName(menu.name);
+  }
+
+  function addLine() {
+    const dishId = Number(selectedDishId);
+
+    if (!dishId || !portions.trim()) return;
+
+    setLines((currentLines) => {
+      const existingLine = currentLines.find((line) => line.dishId === dishId);
+
+      if (existingLine) {
+        return currentLines.map((line) =>
+          line.dishId === dishId ? { ...line, portions } : line
+        );
+      }
+
+      return [{ dishId, portions }, ...currentLines];
+    });
+
+    setSelectedDishId("");
+    setPortions("");
+  }
+
+  function updateLinePortions(dishId: number, value: string) {
+    setLines((currentLines) =>
+      currentLines.map((line) =>
+        line.dishId === dishId ? { ...line, portions: value } : line
+      )
+    );
+  }
+
+  function removeLine(dishId: number) {
+    setLines((currentLines) =>
+      currentLines.filter((line) => line.dishId !== dishId)
+    );
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const validLines = lines.filter((line) => line.portions.trim());
+
+    if (!name.trim() || !date || validLines.length === 0) return;
+
+    onAddProduction({
+      name,
+      date,
+      lines: validLines,
+    });
+
+    setName("");
+    setDate(new Date().toISOString().slice(0, 10));
+    setSelectedMenuId("");
+    setSelectedDishId("");
+    setPortions("");
+    setLines([]);
+  }
+
+  return (
+    <section className="dishes-layout">
+      <article className="panel dish-form-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Prévision</p>
+            <h2>Nouvelle production</h2>
+          </div>
+        </div>
+
+        <form className="entity-form" onSubmit={handleSubmit}>
+          <label>
+            Nom
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ex : Production semaine 29"
+            />
+          </label>
+
+          <label>
+            Date
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Charger depuis un menu
+            <select
+              value={selectedMenuId}
+              onChange={(event) => setSelectedMenuId(event.target.value)}
+            >
+              <option value="">Choisir un menu</option>
+              {menus.map((menu) => (
+                <option key={menu.id} value={menu.id}>
+                  {menu.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button className="primary-action" type="button" onClick={loadMenu}>
+            Charger le menu
+          </button>
+
+          <label>
+            Plat
+            <select
+              value={selectedDishId}
+              onChange={(event) => setSelectedDishId(event.target.value)}
+            >
+              <option value="">Choisir un plat actif</option>
+              {activeDishes.map((dish) => (
+                <option key={dish.id} value={dish.id}>
+                  {dish.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Portions prévues
+            <input
+              inputMode="decimal"
+              value={portions}
+              onChange={(event) => setPortions(event.target.value)}
+              placeholder="Ex : 60"
+            />
+          </label>
+
+          <button className="primary-action" type="button" onClick={addLine}>
+            Ajouter le plat
+          </button>
+
+          <div className="setting-list">
+            {lines.length === 0 ? (
+              <p>Aucun plat en production.</p>
+            ) : (
+              lines.map((line) => {
+                const dish = dishes.find((item) => item.id === line.dishId);
+
+                return (
+                  <p key={line.dishId}>
+                    {dish?.name || "Plat supprimé"}{" "}
+                    <input
+                      inputMode="decimal"
+                      value={line.portions}
+                      onChange={(event) =>
+                        updateLinePortions(line.dishId, event.target.value)
+                      }
+                      placeholder="Portions"
+                    />{" "}
+                    <button
+                      className="delete-action"
+                      type="button"
+                      onClick={() => removeLine(line.dishId)}
+                    >
+                      Retirer
+                    </button>
+                  </p>
+                );
+              })
+            )}
+          </div>
+
+          <button className="primary-action" type="submit">
+            Enregistrer la production
+          </button>
+        </form>
+      </article>
+
+      <article className="panel dishes-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Productions</p>
+            <h2>Prévisions créées</h2>
+          </div>
+          <span className="status-pill">{productions.length}</span>
+        </div>
+
+        <div className="dish-list">
+          {productions.length === 0 ? (
+            <div className="empty-state">
+              <strong>Aucune production</strong>
+              <p>Crée une production pour calculer les besoins théoriques.</p>
+            </div>
+          ) : (
+            productions.map((production) => (
+              <div className="dish-row" key={production.id}>
+                <div className="dish-photo">PROD</div>
+
+                <div className="dish-info">
+                  <div>
+                    <strong>{production.name}</strong>
+                    <span>{formatDate(production.date)}</span>
+                  </div>
+                  <p>{getProductionDishSummary(production, dishes)}</p>
+                  <p>{getProductionNeedsSummary(production, dishes, specs)}</p>
+                </div>
+
+                <div className="dish-meta">
+                  <strong>{production.lines.length}</strong>
+                  <span>plats</span>
+                </div>
+
+                <div className="dish-actions">
+                  <button
+                    className="delete-action"
+                    onClick={() => onDeleteProduction(production.id)}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </article>
+    </section>
+  );
+}
+
 function SettingsView() {
   return (
     <section className="settings-grid">
@@ -1015,4 +1324,62 @@ function getMenuDishNames(menu: WeeklyMenu, dishes: Dish[]) {
     .filter(Boolean);
 
   return names.length > 0 ? names.join(", ") : "Aucun plat.";
+}
+
+function getProductionDishSummary(production: ProductionPlan, dishes: Dish[]) {
+  return production.lines
+    .map((line) => {
+      const dish = dishes.find((item) => item.id === line.dishId);
+      return `${dish?.name || "Plat supprimé"} : ${line.portions} portions`;
+    })
+    .join(" | ");
+}
+
+function getProductionNeedsSummary(
+  production: ProductionPlan,
+  dishes: Dish[],
+  specs: DishSpec[]
+) {
+  const needs = production.lines.flatMap((line) => {
+    const dish = dishes.find((item) => item.id === line.dishId);
+    const spec = specs.find((item) => item.dishId === line.dishId);
+
+    if (!dish || !spec) return [];
+
+    return spec.items.map((item) => {
+      const total = multiplyDecimalStrings(item.quantity, line.portions);
+
+      return `${item.name} : ${total} ${item.unit}`;
+    });
+  });
+
+  return needs.length > 0 ? needs.join(" | ") : "Aucun besoin calculable.";
+}
+
+function multiplyDecimalStrings(quantity: string, multiplier: string) {
+  const cleanQuantity = quantity.replace(",", ".").trim();
+  const cleanMultiplier = multiplier.replace(",", ".").trim();
+
+  const quantityDecimals = cleanQuantity.split(".")[1]?.length || 0;
+  const multiplierDecimals = cleanMultiplier.split(".")[1]?.length || 0;
+  const totalDecimals = quantityDecimals + multiplierDecimals;
+
+  const quantityInteger = Number(cleanQuantity.replace(".", ""));
+  const multiplierInteger = Number(cleanMultiplier.replace(".", ""));
+
+  if (Number.isNaN(quantityInteger) || Number.isNaN(multiplierInteger)) {
+    return "0";
+  }
+
+  const result = (quantityInteger * multiplierInteger).toString();
+
+  if (totalDecimals === 0) {
+    return result;
+  }
+
+  const paddedResult = result.padStart(totalDecimals + 1, "0");
+  const integerPart = paddedResult.slice(0, -totalDecimals);
+  const decimalPart = paddedResult.slice(-totalDecimals).replace(/0+$/, "");
+
+  return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
 }
