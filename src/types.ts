@@ -82,12 +82,14 @@ export type StockItem = {
   alertThreshold: string;
 };
 
+export type StockMovementType = "Entrée" | "Sortie" | "entrée" | "sortie";
+
 export type StockMovement = {
   id: number;
   date: string;
   itemId?: number;
   stockItemId?: number;
-  type: "Entrée" | "Sortie";
+  type: StockMovementType;
   quantity: string;
   comment: string;
   userName?: string;

@@ -105,6 +105,10 @@ export function getStockCategoryName(type: string): string {
   return type || "-";
 }
 
+export function isStockEntry(type: string): boolean {
+  return type === "Entrée" || type === "entrée" || type === "Ajout";
+}
+
 export function isMenuActive(menu: { startDate: string; endDate: string }): boolean {
   const today = new Date();
   const start = new Date(menu.startDate);
@@ -341,7 +345,7 @@ export function getStockQuantity(itemId: number, movements: AnyStockMovement[]):
     .reduce((total, movement) => {
       const quantity = toNumber(movement.quantity);
 
-      if (movement.type === "Entrée" || movement.type === "Ajout") {
+      if (isStockEntry(movement.type)) {
         return total + quantity;
       }
 
