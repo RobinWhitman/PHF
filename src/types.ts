@@ -131,3 +131,13 @@ export type PurchaseInvoice = {
   fileUrl: string;
   createdBy: string;
 };
+
+export type HistoryEntry = {
+  id: number;
+  date: string;
+  time: string;
+  userName: string;
+  module: string;
+  action: string;
+  details: string;
+};
