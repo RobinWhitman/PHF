@@ -22,15 +22,8 @@ export const navItems = [
   "Paramètres",
 ];
 
-export const metrics = [
-  { label: "CA jour", value: "0,00 €" },
-  { label: "CA semaine", value: "0,00 €" },
-  { label: "Ventes", value: "0" },
-  { label: "TVA estimée", value: "0,00 €" },
-];
-
 export const settings = {
-  payments: ["Espèces", "Carte bancaire", "Virement"],
+  payments: ["Espèces", "Carte bancaire", "Virement", "PayPal"],
   dishCategories: ["Plats", "Desserts", "Boissons"],
   purchaseCategories: ["Ingrédients", "Emballages", "Charges"],
 };

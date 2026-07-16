@@ -1,47 +1,97 @@
+"use client";
+
 import { settings } from "../data/initial-data";
 
 export function SettingsView() {
+  function handleReset() {
+    const confirmText = window.prompt(
+      "Remise à zéro complète des données de test. Tape RESET pour confirmer.",
+    );
+
+    if (confirmText !== "RESET") return;
+
+    const pin = window.prompt("Mot de passe admin requis.");
+
+    if (pin !== "2323") {
+      window.alert("Mot de passe admin incorrect.");
+      return;
+    }
+
+    const finalConfirm = window.confirm(
+      "Dernière confirmation : toutes les données créées pendant les tests seront supprimées.",
+    );
+
+    if (!finalConfirm) return;
+
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("phf-")) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    window.alert("Application remise à zéro.");
+    window.location.reload();
+  }
+
   return (
-    <section className="settings-grid">
-      <article className="panel setting-card">
-        <p className="eyebrow">Encaissement</p>
-        <h2>Moyens de paiement</h2>
-        <div className="setting-list">
-          {settings.payments.map((item) => (
-            <p key={item}>{item}</p>
-          ))}
+    <section className="module-page">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Administration</p>
+          <h1>Paramètres</h1>
         </div>
-      </article>
+      </div>
 
-      <article className="panel setting-card">
-        <p className="eyebrow">Organisation</p>
-        <h2>Catégories plats</h2>
-        <div className="setting-list">
-          {settings.dishCategories.map((item) => (
-            <p key={item}>{item}</p>
-          ))}
-        </div>
-      </article>
+      <div className="workspace-grid two-columns">
+        <div className="panel">
+          <h2>Modes de paiement</h2>
 
-      <article className="panel setting-card">
-        <p className="eyebrow">Achats</p>
-        <h2>Catégories achats</h2>
-        <div className="setting-list">
-          {settings.purchaseCategories.map((item) => (
-            <p key={item}>{item}</p>
-          ))}
+          <div className="chip-list">
+            {settings.payments.map((payment) => (
+              <span className="chip" key={payment}>
+                {payment}
+              </span>
+            ))}
+          </div>
         </div>
-      </article>
 
-      <article className="panel setting-card">
-        <p className="eyebrow">Fiscalité</p>
-        <h2>TVA</h2>
-        <div className="setting-list">
-          <p>TVA ventes : 5,5 %</p>
-          <p>TVA achats : saisie manuelle</p>
-          <p>Modification réservée à Robin</p>
+        <div className="panel">
+          <h2>Catégories plats</h2>
+
+          <div className="chip-list">
+            {settings.dishCategories.map((category) => (
+              <span className="chip" key={category}>
+                {category}
+              </span>
+            ))}
+          </div>
         </div>
-      </article>
+
+        <div className="panel">
+          <h2>Catégories achats</h2>
+
+          <div className="chip-list">
+            {settings.purchaseCategories.map((category) => (
+              <span className="chip" key={category}>
+                {category}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel danger-panel">
+          <h2>Remise à zéro des tests</h2>
+
+          <p className="muted-text">
+            Supprime les plats créés, ventes, stocks, productions, factures, antennes,
+            cahiers des charges et historique enregistrés dans le navigateur.
+          </p>
+
+          <button className="danger-button" type="button" onClick={handleReset}>
+            Remettre l&apos;appli à zéro
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
