@@ -84,12 +84,14 @@ export type StockItem = {
   userName?: string;
 };
 
+export type StockMovementType = "Entrée" | "Sortie" | "entrée" | "sortie";
+
 export type StockMovement = {
   id: number;
   date: string;
   itemId?: number;
   stockItemId?: number;
-  type: "Entrée" | "Sortie" | "entrée" | "sortie" | string;
+  type: StockMovementType;
   quantity: string;
   comment: string;
   userName?: string;
@@ -110,12 +112,14 @@ export type AntennaDishStock = {
   userName?: string;
 };
 
+export type AntennaMovementType = "ajout" | "retrait";
+
 export type AntennaMovement = {
   id: number;
   date: string;
   antennaId: number;
   dishId: number;
-  type: "Ajout" | "Retrait" | string;
+  type: AntennaMovementType;
   quantity: string;
   comment: string;
   userName?: string;
@@ -131,6 +135,7 @@ export type Sale = {
   date: string;
   antennaId: number;
   payment: string;
+  paymentMethod: string;
   customerName: string;
   invoiceRequested: boolean;
   customerEmail: string;
@@ -151,6 +156,7 @@ export type PurchaseInvoice = {
   comment: string;
   fileUrl: string;
   userName?: string;
+  createdBy?: string;
 };
 
 export type HistoryEntry = {
