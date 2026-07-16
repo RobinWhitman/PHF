@@ -90,6 +90,7 @@ export type StockMovement = {
   type: "Entrée" | "Sortie";
   quantity: string;
   comment: string;
+  userName?: string;
 };
 
 export type Antenna = {
