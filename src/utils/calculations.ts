@@ -9,10 +9,12 @@ import type {
 
 export function toNumber(value: string | number | undefined | null): number {
   if (value === undefined || value === null) return 0;
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
 
-  const normalized = value.replace(",", ".").trim();
-  const parsed = Number(normalized);
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const parsed = Number(value.replace(",", ".").trim());
 
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -28,9 +30,7 @@ export function calculateDishCost(dishId: number, specItems: SpecItem[]): number
   return specItems
     .filter((item) => item.dishId === dishId)
     .reduce((total, item) => {
-      const quantity = toNumber(item.quantity);
-      const unitCost = toNumber(item.unitCost);
-      return total + quantity * unitCost;
+      return total + toNumber(item.quantity) * toNumber(item.unitCost);
     }, 0);
 }
 
@@ -40,6 +40,7 @@ export function calculateSaleLineRevenue(
   dishes: Dish[],
 ): number {
   const dish = dishes.find((item) => item.id === dishId);
+
   return toNumber(quantity) * toNumber(dish?.price);
 }
 
@@ -117,17 +118,50 @@ export function aggregateNeeds(lines: NeedLine[]): NeedLine[] {
   lines.forEach((line) => {
     const key = `${line.type}-${line.name}-${line.unit}`;
 
-    if (!grouped.has(key)) {
+    const existing = grouped.get(key);
+
+    if (!existing) {
       grouped.set(key, { ...line });
       return;
     }
 
-    const existing = grouped.get(key);
-
-    if (existing) {
-      existing.quantity += line.quantity;
-    }
+    grouped.set(key, {
+      ...existing,
+      quantity: existing.quantity + line.quantity,
+    });
   });
 
   return Array.from(grouped.values());
+}
+
+export function getStockQuantity(itemId: number, movements: { itemId: number; type: string; quantity: string }[]): number {
+  return movements
+    .filter((movement) => movement.itemId === itemId)
+    .reduce((total, movement) => {
+      const quantity = toNumber(movement.quantity);
+
+      if (movement.type === "Entrée" || movement.type === "Ajout") {
+        return total + quantity;
+      }
+
+      return total - quantity;
+    }, 0);
+}
+
+export function getAntennaDishQuantity(
+  antennaId: number,
+  dishId: number,
+  movements: { antennaId: number; dishId: number; type: string; quantity: string }[],
+): number {
+  return movements
+    .filter((movement) => movement.antennaId === antennaId && movement.dishId === dishId)
+    .reduce((total, movement) => {
+      const quantity = toNumber(movement.quantity);
+
+      if (movement.type === "Ajout") {
+        return total + quantity;
+      }
+
+      return total - quantity;
+    }, 0);
 }
