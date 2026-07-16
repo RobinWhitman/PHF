@@ -1,11 +1,15 @@
 import type {
   Dish,
+  DishSpec,
+  DishSpecItem,
   NeedLine,
   ProductionPlan,
   PurchaseInvoice,
   Sale,
   SpecItem,
 } from "../types";
+
+type AnySpecInput = DishSpec[] | DishSpecItem[] | SpecItem[];
 
 type LegacyProductionLine = {
   dishId: number;
@@ -19,16 +23,6 @@ type LegacyProductionPlan = {
   date: string;
   menuId?: number | null;
   lines: LegacyProductionLine[];
-};
-
-type LegacySpecItem = {
-  id: number;
-  dishId: number;
-  type: "ingredient" | "consommable";
-  name: string;
-  quantity: string;
-  unit: string;
-  unitCost?: string;
 };
 
 export function toNumber(value: string | number | undefined | null): number {
@@ -49,6 +43,16 @@ export function toDecimalString(value: number): string {
   const rounded = Math.round(value * 1000) / 1000;
 
   return String(rounded);
+}
+
+export function normalizeSpecs(specs: AnySpecInput): DishSpecItem[] {
+  return specs.flatMap((spec) => {
+    if ("items" in spec) {
+      return spec.items;
+    }
+
+    return [spec as DishSpecItem];
+  });
 }
 
 export function addDecimalStrings(first: string, second: string): string {
@@ -106,10 +110,7 @@ export function isMenuActive(menu: { startDate: string; endDate: string }): bool
   return today >= start && today <= end;
 }
 
-export function getMenuDishNames(
-  dishIds: number[],
-  dishes: Dish[],
-): string {
+export function getMenuDishNames(dishIds: number[], dishes: Dish[]): string {
   if (!dishIds.length) return "Aucun plat";
 
   return dishIds
@@ -117,8 +118,8 @@ export function getMenuDishNames(
     .join(", ");
 }
 
-export function calculateDishCost(dishId: number, specItems: SpecItem[]): number {
-  return specItems
+export function calculateDishCost(dishId: number, specs: AnySpecInput): number {
+  return normalizeSpecs(specs)
     .filter((item) => item.dishId === dishId)
     .reduce((total, item) => {
       return total + toNumber(item.quantity) * toNumber(item.unitCost);
@@ -138,9 +139,9 @@ export function calculateSaleLineRevenue(
 export function calculateSaleLineCost(
   dishId: number,
   quantity: string,
-  specItems: SpecItem[],
+  specs: AnySpecInput,
 ): number {
-  return toNumber(quantity) * calculateDishCost(dishId, specItems);
+  return toNumber(quantity) * calculateDishCost(dishId, specs);
 }
 
 export function calculateSaleRevenue(sale: Sale, dishes: Dish[]): number {
@@ -149,9 +150,9 @@ export function calculateSaleRevenue(sale: Sale, dishes: Dish[]): number {
   }, 0);
 }
 
-export function calculateSaleCost(sale: Sale, specItems: SpecItem[]): number {
+export function calculateSaleCost(sale: Sale, specs: AnySpecInput): number {
   return sale.lines.reduce((total, line) => {
-    return total + calculateSaleLineCost(line.dishId, line.quantity, specItems);
+    return total + calculateSaleLineCost(line.dishId, line.quantity, specs);
   }, 0);
 }
 
@@ -161,18 +162,18 @@ export function calculateSalesRevenue(sales: Sale[], dishes: Dish[]): number {
   }, 0);
 }
 
-export function calculateSalesCost(sales: Sale[], specItems: SpecItem[]): number {
+export function calculateSalesCost(sales: Sale[], specs: AnySpecInput): number {
   return sales.reduce((total, sale) => {
-    return total + calculateSaleCost(sale, specItems);
+    return total + calculateSaleCost(sale, specs);
   }, 0);
 }
 
 export function calculateSalesProfit(
   sales: Sale[],
   dishes: Dish[],
-  specItems: SpecItem[],
+  specs: AnySpecInput,
 ): number {
-  return calculateSalesRevenue(sales, dishes) - calculateSalesCost(sales, specItems);
+  return calculateSalesRevenue(sales, dishes) - calculateSalesCost(sales, specs);
 }
 
 export function calculatePurchaseTotal(purchaseInvoices: PurchaseInvoice[]): number {
@@ -200,13 +201,15 @@ export function getProductionDishSummary(
 export function calculateProductionNeeds(
   productionPlan: ProductionPlan,
   dishes: Dish[],
-  specItems: SpecItem[],
+  specs: AnySpecInput,
 ): NeedLine[] {
+  const flatSpecs = normalizeSpecs(specs);
+
   return productionPlan.lines.flatMap((line) => {
     const dish = dishes.find((item) => item.id === line.dishId);
-    const portions = toNumber(line.portions);
+    const portions = toNumber(line.portions || line.quantity || "0");
 
-    return specItems
+    return flatSpecs
       .filter((item) => item.dishId === line.dishId)
       .map((item) => ({
         dishId: line.dishId,
@@ -221,12 +224,14 @@ export function calculateProductionNeeds(
 
 export function getProductionNeedsSummary(
   plan: LegacyProductionPlan,
-  specs: LegacySpecItem[],
+  specs: AnySpecInput,
 ): string {
+  const flatSpecs = normalizeSpecs(specs);
+
   const needs = plan.lines.flatMap((line) => {
     const portions = toNumber(line.portions || line.quantity || "0");
 
-    return specs
+    return flatSpecs
       .filter((item) => item.dishId === line.dishId)
       .map((item) => ({
         name: item.name,
@@ -270,7 +275,7 @@ function aggregateLegacyNeeds(
 
 export function getShoppingNeeds(
   productionPlan: LegacyProductionPlan,
-  specs: LegacySpecItem[],
+  specs: AnySpecInput,
 ): {
   id: number;
   type: "ingredient" | "consommable";
@@ -278,10 +283,12 @@ export function getShoppingNeeds(
   quantity: string;
   unit: string;
 }[] {
+  const flatSpecs = normalizeSpecs(specs);
+
   const needs = productionPlan.lines.flatMap((line) => {
     const portions = toNumber(line.portions || line.quantity || "0");
 
-    return specs
+    return flatSpecs
       .filter((item) => item.dishId === line.dishId)
       .map((item) => ({
         type: item.type,

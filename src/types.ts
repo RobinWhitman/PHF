@@ -25,7 +25,7 @@ export type WeeklyMenu = {
 
 export type Menu = WeeklyMenu;
 
-export type DishSpec = {
+export type DishSpecItem = {
   id: number;
   dishId: number;
   type: "ingredient" | "consommable";
@@ -35,7 +35,12 @@ export type DishSpec = {
   unitCost?: string;
 };
 
-export type SpecItem = DishSpec;
+export type SpecItem = DishSpecItem;
+
+export type DishSpec = {
+  dishId: number;
+  items: DishSpecItem[];
+};
 
 export type ProductionLine = {
   dishId: number;
