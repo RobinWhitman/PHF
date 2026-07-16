@@ -15,7 +15,7 @@ export type Dish = {
   active: boolean;
 };
 
-export type Menu = {
+export type WeeklyMenu = {
   id: number;
   name: string;
   startDate: string;
@@ -23,7 +23,9 @@ export type Menu = {
   dishIds: number[];
 };
 
-export type SpecItem = {
+export type Menu = WeeklyMenu;
+
+export type DishSpec = {
   id: number;
   dishId: number;
   type: "ingredient" | "consommable";
@@ -33,9 +35,12 @@ export type SpecItem = {
   unitCost?: string;
 };
 
+export type SpecItem = DishSpec;
+
 export type ProductionLine = {
   dishId: number;
   portions: string;
+  quantity?: string;
 };
 
 export type ProductionPlan = {
@@ -44,6 +49,14 @@ export type ProductionPlan = {
   date: string;
   menuId: number | null;
   lines: ProductionLine[];
+};
+
+export type ShoppingNeed = {
+  id: number;
+  type: "ingredient" | "consommable";
+  name: string;
+  quantity: string;
+  unit: string;
 };
 
 export type NeedLine = {
