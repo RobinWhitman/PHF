@@ -1,67 +1,106 @@
-import type { User } from "../types";
-import { metrics } from "../data/initial-data";
+"use client";
+
+import type { Dish, PurchaseInvoice, Sale, SpecItem } from "../types";
+import {
+  calculatePurchaseTotal,
+  calculateSalesCost,
+  calculateSalesProfit,
+  calculateSalesRevenue,
+  formatCurrency,
+} from "../utils/calculations";
 
 type DashboardViewProps = {
-  currentUser: User;
-  isAdmin: boolean;
+  dishes?: Dish[];
+  sales?: Sale[];
+  specItems?: SpecItem[];
+  specs?: SpecItem[];
+  purchaseInvoices?: PurchaseInvoice[];
 };
 
-export function DashboardView({ currentUser, isAdmin }: DashboardViewProps) {
+export function DashboardView({
+  dishes = [],
+  sales = [],
+  specItems,
+  specs,
+  purchaseInvoices = [],
+}: DashboardViewProps) {
+  const recipeItems = specItems || specs || [];
+
+  const revenue = calculateSalesRevenue(sales, dishes);
+  const recipeCost = calculateSalesCost(sales, recipeItems);
+  const grossProfit = calculateSalesProfit(sales, dishes, recipeItems);
+  const purchaseTotal = calculatePurchaseTotal(purchaseInvoices);
+
+  const marginRate = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+
   return (
-    <>
-      <section className="metrics-grid">
-        {metrics.map((metric) => (
-          <article className="metric-card" key={metric.label}>
-            <p>{metric.label}</p>
-            <strong>{metric.value}</strong>
-          </article>
-        ))}
-      </section>
+    <section className="module-page">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Vue générale</p>
+          <h1>Dashboard</h1>
+        </div>
+      </div>
 
-      <section className="work-grid">
-        <article className="panel large-panel">
-          <div className="panel-heading">
+      <div className="metrics-grid">
+        <article className="metric-card">
+          <span>CA encaissé</span>
+          <strong>{formatCurrency(revenue)}</strong>
+        </article>
+
+        <article className="metric-card">
+          <span>Coût recettes</span>
+          <strong>{formatCurrency(recipeCost)}</strong>
+        </article>
+
+        <article className="metric-card positive">
+          <span>Bénéfice brut</span>
+          <strong>{formatCurrency(grossProfit)}</strong>
+        </article>
+
+        <article className="metric-card">
+          <span>Marge brute</span>
+          <strong>{marginRate.toFixed(1)} %</strong>
+        </article>
+      </div>
+
+      <div className="workspace-grid two-columns">
+        <div className="panel">
+          <h2>Lecture rapide</h2>
+
+          <div className="info-list">
             <div>
-              <p className="eyebrow">Session</p>
-              <h2>Bienvenue {currentUser.name}</h2>
+              <span>Ventes enregistrées</span>
+              <strong>{sales.length}</strong>
             </div>
-            <span className="status-pill">{isAdmin ? "Admin" : "Associé"}</span>
-          </div>
 
-          <div className="empty-state">
-            <strong>Connexion active</strong>
-            <p>
-              Les actions importantes seront ensuite enregistrées avec
-              utilisateur, date et heure.
-            </p>
-          </div>
-        </article>
+            <div>
+              <span>Plats actifs</span>
+              <strong>{dishes.filter((dish) => dish.active).length}</strong>
+            </div>
 
-        <article className="panel">
-          <div className="panel-heading">
-            <h2>Droits</h2>
-          </div>
+            <div>
+              <span>Lignes de cahiers des charges</span>
+              <strong>{recipeItems.length}</strong>
+            </div>
 
-          <div className="alert-list">
-            <p>Accès ventes, stocks, production et factures</p>
-            <p>Paramètres sensibles : {isAdmin ? "autorisés" : "bloqués"}</p>
-            <p>Historique utilisateur préparé</p>
+            <div>
+              <span>Factures achat TTC</span>
+              <strong>{formatCurrency(purchaseTotal)}</strong>
+            </div>
           </div>
-        </article>
+        </div>
 
-        <article className="panel">
-          <div className="panel-heading">
-            <h2>Actions rapides</h2>
-          </div>
+        <div className="panel">
+          <h2>À retenir</h2>
 
-          <div className="action-list">
-            <button>Nouvelle vente</button>
-            <button>Créer un menu</button>
-            <button>Prévoir production</button>
-            <button>Ajouter facture</button>
-          </div>
-        </article>
-      </section>
-    </>
+          <p className="muted-text">
+            Le bénéfice brut est calculé avec les ventes moins le coût des recettes
+            renseignées dans les cahiers des charges. Plus les prix unitaires sont remplis,
+            plus le résultat devient fiable.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }

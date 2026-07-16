@@ -15,7 +15,7 @@ export type Dish = {
   active: boolean;
 };
 
-export type WeeklyMenu = {
+export type Menu = {
   id: number;
   name: string;
   startDate: string;
@@ -25,15 +25,12 @@ export type WeeklyMenu = {
 
 export type SpecItem = {
   id: number;
+  dishId: number;
+  type: "ingredient" | "consommable";
   name: string;
   quantity: string;
   unit: string;
-  type: "ingredient" | "consommable";
-};
-
-export type DishSpec = {
-  dishId: number;
-  items: SpecItem[];
+  unitCost?: string;
 };
 
 export type ProductionLine = {
@@ -45,32 +42,34 @@ export type ProductionPlan = {
   id: number;
   name: string;
   date: string;
+  menuId: number | null;
   lines: ProductionLine[];
 };
 
-export type ShoppingNeed = {
-  name: string;
-  quantity: string;
-  unit: string;
+export type NeedLine = {
+  dishId: number;
+  dishName: string;
   type: "ingredient" | "consommable";
+  name: string;
+  quantity: number;
+  unit: string;
 };
 
 export type StockItem = {
   id: number;
   name: string;
-  category: "ingredient" | "consommable" | "plat";
+  type: "ingredient" | "consommable";
   unit: string;
   quantity: string;
-  minQuantity: string;
+  alertThreshold: string;
 };
 
 export type StockMovement = {
   id: number;
-  stockItemId: number;
-  type: "entrée" | "sortie";
-  quantity: string;
   date: string;
-  userName: string;
+  itemId: number;
+  type: "Entrée" | "Sortie";
+  quantity: string;
   comment: string;
 };
 
@@ -89,28 +88,24 @@ export type AntennaDishStock = {
 
 export type AntennaMovement = {
   id: number;
+  date: string;
   antennaId: number;
   dishId: number;
-  type: "ajout" | "retrait";
+  type: "Ajout" | "Retrait";
   quantity: string;
-  date: string;
-  userName: string;
   comment: string;
 };
 
 export type SaleLine = {
   dishId: number;
   quantity: string;
-  unitPrice: string;
 };
 
 export type Sale = {
   id: number;
   date: string;
-  time: string;
-  userName: string;
   antennaId: number;
-  paymentMethod: string;
+  payment: string;
   customerName: string;
   invoiceRequested: boolean;
   customerEmail: string;
@@ -123,13 +118,12 @@ export type PurchaseInvoice = {
   date: string;
   supplier: string;
   number: string;
-  amountHt: string;
-  amountVat: string;
-  amountTtc: string;
+  ht: string;
+  vat: string;
+  ttc: string;
   category: string;
   comment: string;
   fileUrl: string;
-  createdBy: string;
 };
 
 export type HistoryEntry = {

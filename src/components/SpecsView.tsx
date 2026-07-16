@@ -1,73 +1,87 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
-import type { Dish, DishSpec, SpecItem } from "../types";
+"use client";
+
+import { useMemo, useState } from "react";
+import type { Dish, SpecItem } from "../types";
+import { calculateDishCost, formatCurrency } from "../utils/calculations";
 
 type SpecsViewProps = {
   dishes: Dish[];
-  specs: DishSpec[];
-  onAddSpecItem: (dishId: number, item: Omit<SpecItem, "id">) => void;
-  onDeleteSpecItem: (dishId: number, itemId: number) => void;
+  specItems?: SpecItem[];
+  specs?: SpecItem[];
+  onAddSpecItem: (item: Omit<SpecItem, "id">) => void;
+  onDeleteSpecItem: (id: number) => void;
 };
 
 export function SpecsView({
   dishes,
+  specItems,
   specs,
   onAddSpecItem,
   onDeleteSpecItem,
 }: SpecsViewProps) {
+  const items = specItems || specs || [];
   const activeDishes = dishes.filter((dish) => dish.active);
-  const [selectedDishId, setSelectedDishId] = useState(
-    activeDishes[0]?.id.toString() || ""
-  );
+
+  const [dishId, setDishId] = useState(activeDishes[0]?.id?.toString() || "");
+  const [type, setType] = useState<"ingredient" | "consommable">("ingredient");
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("g");
-  const [type, setType] = useState<"ingredient" | "consommable">("ingredient");
+  const [unitCost, setUnitCost] = useState("");
 
-  const dishId = Number(selectedDishId);
-  const selectedDish = dishes.find((dish) => dish.id === dishId);
-  const selectedSpec = specs.find((spec) => spec.dishId === dishId);
-  const items = selectedSpec?.items || [];
+  const selectedDishId = Number(dishId);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const selectedDish = useMemo(() => {
+    return dishes.find((dish) => dish.id === selectedDishId);
+  }, [dishes, selectedDishId]);
+
+  const selectedItems = items.filter((item) => item.dishId === selectedDishId);
+  const selectedDishCost = calculateDishCost(selectedDishId, items);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!dishId || !name.trim() || !quantity.trim() || !unit.trim()) return;
 
-    onAddSpecItem(dishId, { name, quantity, unit, type });
+    onAddSpecItem({
+      dishId: selectedDishId,
+      type,
+      name: name.trim(),
+      quantity: quantity.trim(),
+      unit: unit.trim(),
+      unitCost: unitCost.trim(),
+    });
 
     setName("");
     setQuantity("");
-    setUnit("g");
-    setType("ingredient");
+    setUnitCost("");
   }
 
   return (
-    <section className="dishes-layout">
-      <article className="panel dish-form-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Fiche technique</p>
-            <h2>Ajouter un besoin</h2>
-          </div>
+    <section className="module-page">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Cahiers des charges</p>
+          <h1>Recettes, coûts et consommables</h1>
         </div>
 
-        <form className="entity-form" onSubmit={handleSubmit}>
+        <div className="summary-pill">
+          Coût portion : {formatCurrency(selectedDishCost)}
+        </div>
+      </div>
+
+      <div className="workspace-grid two-columns">
+        <form className="panel form-panel" onSubmit={handleSubmit}>
+          <h2>Ajouter une ligne</h2>
+
           <label>
             Plat
-            <select
-              value={selectedDishId}
-              onChange={(event) => setSelectedDishId(event.target.value)}
-            >
-              {activeDishes.length === 0 ? (
-                <option value="">Aucun plat actif</option>
-              ) : (
-                activeDishes.map((dish) => (
-                  <option key={dish.id} value={dish.id}>
-                    {dish.name}
-                  </option>
-                ))
-              )}
+            <select value={dishId} onChange={(event) => setDishId(event.target.value)}>
+              {activeDishes.map((dish) => (
+                <option key={dish.id} value={dish.id}>
+                  {dish.name}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -75,12 +89,10 @@ export function SpecsView({
             Type
             <select
               value={type}
-              onChange={(event) =>
-                setType(event.target.value as "ingredient" | "consommable")
-              }
+              onChange={(event) => setType(event.target.value as "ingredient" | "consommable")}
             >
               <option value="ingredient">Ingrédient</option>
-              <option value="consommable">Emballage / consommable</option>
+              <option value="consommable">Consommable</option>
             </select>
           </label>
 
@@ -89,89 +101,100 @@ export function SpecsView({
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Ex : poulet, riz, barquette"
+              placeholder="Poulet, riz, boîte..."
             />
           </label>
 
+          <div className="form-row">
+            <label>
+              Quantité par portion
+              <input
+                value={quantity}
+                onChange={(event) => setQuantity(event.target.value)}
+                placeholder="150"
+              />
+            </label>
+
+            <label>
+              Unité
+              <input
+                value={unit}
+                onChange={(event) => setUnit(event.target.value)}
+                placeholder="g, ml, unité"
+              />
+            </label>
+          </div>
+
           <label>
-            Quantité exacte
+            Prix unitaire achat
             <input
-              inputMode="decimal"
-              value={quantity}
-              onChange={(event) => setQuantity(event.target.value)}
-              placeholder="Ex : 150"
+              value={unitCost}
+              onChange={(event) => setUnitCost(event.target.value)}
+              placeholder="Ex : 0.008 pour 0,008 €/g"
             />
           </label>
 
-          <label>
-            Unité
-            <select value={unit} onChange={(event) => setUnit(event.target.value)}>
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="ml">ml</option>
-              <option value="l">l</option>
-              <option value="unité">unité</option>
-            </select>
-          </label>
-
-          <button className="primary-action" type="submit">
-            Ajouter à la fiche
+          <button className="primary-button" type="submit">
+            Ajouter au cahier
           </button>
         </form>
-      </article>
 
-      <article className="panel dishes-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Cahier des charges</p>
-            <h2>{selectedDish?.name || "Aucun plat"}</h2>
+        <div className="panel">
+          <div className="panel-title-row">
+            <h2>{selectedDish?.name || "Plat"}</h2>
+            <span>{selectedItems.length} lignes</span>
           </div>
-          <span className="status-pill">{items.length}</span>
+
+          <div className="table-wrap readable-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Nom</th>
+                  <th>Qté</th>
+                  <th>Coût unitaire</th>
+                  <th>Total portion</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedItems.map((item) => {
+                  const total =
+                    Number(String(item.quantity).replace(",", ".")) *
+                    Number(String(item.unitCost || "0").replace(",", "."));
+
+                  return (
+                    <tr key={item.id}>
+                      <td>{item.type === "ingredient" ? "Ingrédient" : "Consommable"}</td>
+                      <td>{item.name}</td>
+                      <td>
+                        {item.quantity} {item.unit}
+                      </td>
+                      <td>{item.unitCost ? formatCurrency(Number(item.unitCost)) : "-"}</td>
+                      <td>{formatCurrency(Number.isFinite(total) ? total : 0)}</td>
+                      <td>
+                        <button
+                          className="danger-button small-button"
+                          type="button"
+                          onClick={() => onDeleteSpecItem(item.id)}
+                        >
+                          Supprimer
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {selectedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>Aucune ligne pour ce plat.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <div className="dish-list">
-          {items.length === 0 ? (
-            <div className="empty-state">
-              <strong>Aucune ligne</strong>
-              <p>Ajoute les ingrédients et consommables exacts du plat.</p>
-            </div>
-          ) : (
-            items.map((item) => (
-              <div className="dish-row" key={item.id}>
-                <div className="dish-photo">
-                  {item.type === "ingredient" ? "ING" : "CON"}
-                </div>
-
-                <div className="dish-info">
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>
-                      {item.type === "ingredient" ? "Ingrédient" : "Consommable"}
-                    </span>
-                  </div>
-                  <p>
-                    Quantité exacte : {item.quantity} {item.unit}
-                  </p>
-                </div>
-
-                <div className="dish-meta">
-                  <strong>{item.quantity}</strong>
-                  <span>{item.unit}</span>
-                </div>
-
-                <div className="dish-actions">
-                  <button
-                    className="delete-action"
-                    onClick={() => onDeleteSpecItem(dishId, item.id)}
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </article>
+      </div>
     </section>
   );
 }
