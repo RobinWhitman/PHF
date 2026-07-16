@@ -1,0 +1,49 @@
+import type { Dish, User } from "../types";
+
+export const users: User[] = [
+  { name: "Robin", role: "admin", pin: "2323" },
+  { name: "Patrice", role: "associe", pin: "1644" },
+  { name: "Megane", role: "associe", pin: "2010" },
+];
+
+export const navItems = [
+  "Dashboard",
+  "Plats",
+  "Menus",
+  "Cahiers",
+  "Production",
+  "Courses",
+  "Stocks",
+  "Ventes",
+  "Factures",
+  "TVA",
+  "Historique",
+  "Paramètres",
+];
+
+export const metrics = [
+  { label: "CA jour", value: "0,00 €" },
+  { label: "CA semaine", value: "0,00 €" },
+  { label: "Ventes", value: "0" },
+  { label: "TVA estimée", value: "0,00 €" },
+];
+
+export const settings = {
+  antennes: ["Cuisine principale", "Antenne 1", "Antenne 2"],
+  payments: ["Espèces", "Carte bancaire", "Virement"],
+  dishCategories: ["Plats", "Desserts", "Boissons"],
+  purchaseCategories: ["Ingrédients", "Emballages", "Charges"],
+};
+
+export const initialDishes: Dish[] = [
+  {
+    id: 1,
+    name: "Shawarma Bowl",
+    price: "12.90",
+    category: "Plats",
+    vat: "5.5",
+    description: "Poulet, riz, crudités et sauce maison.",
+    photo: "",
+    active: true,
+  },
+];
