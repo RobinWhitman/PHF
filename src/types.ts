@@ -85,7 +85,8 @@ export type StockItem = {
 export type StockMovement = {
   id: number;
   date: string;
-  itemId: number;
+  itemId?: number;
+  stockItemId?: number;
   type: "Entrée" | "Sortie";
   quantity: string;
   comment: string;

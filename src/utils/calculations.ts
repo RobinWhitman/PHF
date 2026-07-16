@@ -25,6 +25,13 @@ type LegacyProductionPlan = {
   lines: LegacyProductionLine[];
 };
 
+type AnyStockMovement = {
+  itemId?: number;
+  stockItemId?: number;
+  type: string;
+  quantity: string;
+};
+
 export function toNumber(value: string | number | undefined | null): number {
   if (value === undefined || value === null) return 0;
 
@@ -328,12 +335,9 @@ export function aggregateNeeds(lines: NeedLine[]): NeedLine[] {
   return Array.from(grouped.values());
 }
 
-export function getStockQuantity(
-  itemId: number,
-  movements: { itemId: number; type: string; quantity: string }[],
-): number {
+export function getStockQuantity(itemId: number, movements: AnyStockMovement[]): number {
   return movements
-    .filter((movement) => movement.itemId === itemId)
+    .filter((movement) => (movement.stockItemId ?? movement.itemId) === itemId)
     .reduce((total, movement) => {
       const quantity = toNumber(movement.quantity);
 
