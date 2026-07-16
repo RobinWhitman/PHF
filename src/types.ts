@@ -54,6 +54,7 @@ export type ProductionPlan = {
   date: string;
   menuId: number | null;
   lines: ProductionLine[];
+  userName?: string;
 };
 
 export type ShoppingNeed = {
@@ -80,16 +81,15 @@ export type StockItem = {
   unit: string;
   quantity: string;
   alertThreshold: string;
+  userName?: string;
 };
-
-export type StockMovementType = "Entrée" | "Sortie" | "entrée" | "sortie";
 
 export type StockMovement = {
   id: number;
   date: string;
   itemId?: number;
   stockItemId?: number;
-  type: StockMovementType;
+  type: "Entrée" | "Sortie" | "entrée" | "sortie" | string;
   quantity: string;
   comment: string;
   userName?: string;
@@ -99,6 +99,7 @@ export type Antenna = {
   id: number;
   name: string;
   active: boolean;
+  userName?: string;
 };
 
 export type AntennaDishStock = {
@@ -106,6 +107,7 @@ export type AntennaDishStock = {
   antennaId: number;
   dishId: number;
   quantity: string;
+  userName?: string;
 };
 
 export type AntennaMovement = {
@@ -113,9 +115,10 @@ export type AntennaMovement = {
   date: string;
   antennaId: number;
   dishId: number;
-  type: "Ajout" | "Retrait";
+  type: "Ajout" | "Retrait" | string;
   quantity: string;
   comment: string;
+  userName?: string;
 };
 
 export type SaleLine = {
@@ -133,6 +136,7 @@ export type Sale = {
   customerEmail: string;
   comment: string;
   lines: SaleLine[];
+  userName?: string;
 };
 
 export type PurchaseInvoice = {
@@ -146,6 +150,7 @@ export type PurchaseInvoice = {
   category: string;
   comment: string;
   fileUrl: string;
+  userName?: string;
 };
 
 export type HistoryEntry = {
