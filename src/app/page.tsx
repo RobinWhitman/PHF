@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
+import { AntennasView, calculateNextAntennaStock } from "../components/AntennasView";
 import { AppShell } from "../components/AppShell";
 import { DashboardView } from "../components/DashboardView";
 import { DishesView } from "../components/DishesView";
@@ -14,8 +15,11 @@ import { ShoppingListView } from "../components/ShoppingListView";
 import { SpecsView } from "../components/SpecsView";
 import { StocksView } from "../components/StocksView";
 
-import { initialDishes, users } from "../data/initial-data";
+import { initialAntennas, initialDishes, users } from "../data/initial-data";
 import type {
+  Antenna,
+  AntennaDishStock,
+  AntennaMovement,
   Dish,
   DishSpec,
   ProductionPlan,
@@ -41,6 +45,9 @@ export default function Home() {
   const [productions, setProductions] = useState<ProductionPlan[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
+  const [antennas, setAntennas] = useState<Antenna[]>(initialAntennas);
+  const [antennaStocks, setAntennaStocks] = useState<AntennaDishStock[]>([]);
+  const [antennaMovements, setAntennaMovements] = useState<AntennaMovement[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
@@ -50,6 +57,9 @@ export default function Home() {
     const savedProductions = window.localStorage.getItem("phf-productions");
     const savedStockItems = window.localStorage.getItem("phf-stock-items");
     const savedStockMovements = window.localStorage.getItem("phf-stock-movements");
+    const savedAntennas = window.localStorage.getItem("phf-antennas");
+    const savedAntennaStocks = window.localStorage.getItem("phf-antenna-stocks");
+    const savedAntennaMovements = window.localStorage.getItem("phf-antenna-movements");
     const user = users.find((item) => item.name === savedUser);
 
     if (user) setCurrentUser(user);
@@ -59,6 +69,9 @@ export default function Home() {
     if (savedProductions) setProductions(JSON.parse(savedProductions));
     if (savedStockItems) setStockItems(JSON.parse(savedStockItems));
     if (savedStockMovements) setStockMovements(JSON.parse(savedStockMovements));
+    if (savedAntennas) setAntennas(JSON.parse(savedAntennas));
+    if (savedAntennaStocks) setAntennaStocks(JSON.parse(savedAntennaStocks));
+    if (savedAntennaMovements) setAntennaMovements(JSON.parse(savedAntennaMovements));
 
     setIsReady(true);
   }, []);
@@ -72,7 +85,24 @@ export default function Home() {
     window.localStorage.setItem("phf-productions", JSON.stringify(productions));
     window.localStorage.setItem("phf-stock-items", JSON.stringify(stockItems));
     window.localStorage.setItem("phf-stock-movements", JSON.stringify(stockMovements));
-  }, [dishes, menus, specs, productions, stockItems, stockMovements, isReady]);
+    window.localStorage.setItem("phf-antennas", JSON.stringify(antennas));
+    window.localStorage.setItem("phf-antenna-stocks", JSON.stringify(antennaStocks));
+    window.localStorage.setItem(
+      "phf-antenna-movements",
+      JSON.stringify(antennaMovements)
+    );
+  }, [
+    dishes,
+    menus,
+    specs,
+    productions,
+    stockItems,
+    stockMovements,
+    antennas,
+    antennaStocks,
+    antennaMovements,
+    isReady,
+  ]);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,6 +160,14 @@ export default function Home() {
         ...production,
         lines: production.lines.filter((line) => line.dishId !== id),
       }))
+    );
+
+    setAntennaStocks((current) =>
+      current.filter((stock) => stock.dishId !== id)
+    );
+
+    setAntennaMovements((current) =>
+      current.filter((movement) => movement.dishId !== id)
     );
   }
 
@@ -207,12 +245,79 @@ export default function Home() {
             ? addDecimalStrings(item.quantity, movement.quantity)
             : subtractDecimalStrings(item.quantity, movement.quantity);
 
-        return {
-          ...item,
-          quantity: nextQuantity,
-        };
+        return { ...item, quantity: nextQuantity };
       })
     );
+  }
+
+  function addAntenna(name: string) {
+    setAntennas((current) => [
+      { id: Date.now(), name, active: true },
+      ...current,
+    ]);
+  }
+
+  function toggleAntenna(id: number) {
+    setAntennas((current) =>
+      current.map((antenna) =>
+        antenna.id === id ? { ...antenna, active: !antenna.active } : antenna
+      )
+    );
+  }
+
+  function deleteAntenna(id: number) {
+    setAntennas((current) => current.filter((antenna) => antenna.id !== id));
+    setAntennaStocks((current) =>
+      current.filter((stock) => stock.antennaId !== id)
+    );
+    setAntennaMovements((current) =>
+      current.filter((movement) => movement.antennaId !== id)
+    );
+  }
+
+  function addAntennaMovement(
+    movement: Omit<AntennaMovement, "id" | "userName">
+  ) {
+    const movementWithUser: AntennaMovement = {
+      ...movement,
+      id: Date.now(),
+      userName: currentUser?.name || "Utilisateur inconnu",
+    };
+
+    setAntennaMovements((current) => [movementWithUser, ...current]);
+
+    setAntennaStocks((current) => {
+      const existingStock = current.find(
+        (stock) =>
+          stock.antennaId === movement.antennaId &&
+          stock.dishId === movement.dishId
+      );
+
+      if (!existingStock) {
+        return [
+          {
+            id: Date.now() + 1,
+            antennaId: movement.antennaId,
+            dishId: movement.dishId,
+            quantity: calculateNextAntennaStock("0", movement.type, movement.quantity),
+          },
+          ...current,
+        ];
+      }
+
+      return current.map((stock) =>
+        stock.id === existingStock.id
+          ? {
+              ...stock,
+              quantity: calculateNextAntennaStock(
+                stock.quantity,
+                movement.type,
+                movement.quantity
+              ),
+            }
+          : stock
+      );
+    });
   }
 
   if (!isReady) {
@@ -294,6 +399,18 @@ export default function Home() {
           onAddStockItem={addStockItem}
           onDeleteStockItem={deleteStockItem}
           onAddStockMovement={addStockMovement}
+        />
+      ) : activeModule === "Antennes" ? (
+        <AntennasView
+          antennas={antennas}
+          dishes={dishes}
+          antennaStocks={antennaStocks}
+          antennaMovements={antennaMovements}
+          currentUserName={currentUser.name}
+          onAddAntenna={addAntenna}
+          onToggleAntenna={toggleAntenna}
+          onDeleteAntenna={deleteAntenna}
+          onAddAntennaMovement={addAntennaMovement}
         />
       ) : (
         <DashboardView currentUser={currentUser} isAdmin={isAdmin} />

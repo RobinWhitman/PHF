@@ -73,3 +73,27 @@ export type StockMovement = {
   userName: string;
   comment: string;
 };
+
+export type Antenna = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
+export type AntennaDishStock = {
+  id: number;
+  antennaId: number;
+  dishId: number;
+  quantity: string;
+};
+
+export type AntennaMovement = {
+  id: number;
+  antennaId: number;
+  dishId: number;
+  type: "ajout" | "retrait";
+  quantity: string;
+  date: string;
+  userName: string;
+  comment: string;
+};

@@ -1,4 +1,4 @@
-import type { Dish, User } from "../types";
+import type { Antenna, Dish, User } from "../types";
 
 export const users: User[] = [
   { name: "Robin", role: "admin", pin: "2323" },
@@ -14,6 +14,7 @@ export const navItems = [
   "Production",
   "Courses",
   "Stocks",
+  "Antennes",
   "Ventes",
   "Factures",
   "TVA",
@@ -29,7 +30,6 @@ export const metrics = [
 ];
 
 export const settings = {
-  antennes: ["Cuisine principale", "Antenne 1", "Antenne 2"],
   payments: ["Espèces", "Carte bancaire", "Virement"],
   dishCategories: ["Plats", "Desserts", "Boissons"],
   purchaseCategories: ["Ingrédients", "Emballages", "Charges"],
@@ -46,4 +46,10 @@ export const initialDishes: Dish[] = [
     photo: "",
     active: true,
   },
+];
+
+export const initialAntennas: Antenna[] = [
+  { id: 1, name: "Cuisine principale", active: true },
+  { id: 2, name: "Antenne 1", active: true },
+  { id: 3, name: "Antenne 2", active: true },
 ];
