@@ -117,3 +117,17 @@ export type Sale = {
   comment: string;
   lines: SaleLine[];
 };
+
+export type PurchaseInvoice = {
+  id: number;
+  date: string;
+  supplier: string;
+  number: string;
+  amountHt: string;
+  amountVat: string;
+  amountTtc: string;
+  category: string;
+  comment: string;
+  fileUrl: string;
+  createdBy: string;
+};

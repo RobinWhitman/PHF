@@ -10,6 +10,7 @@ import { DishesView } from "../components/DishesView";
 import { LoginScreen } from "../components/LoginScreen";
 import { MenusView } from "../components/MenusView";
 import { ProductionView } from "../components/ProductionView";
+import { PurchaseInvoicesView } from "../components/PurchaseInvoicesView";
 import { SalesView } from "../components/SalesView";
 import { SettingsView } from "../components/SettingsView";
 import { ShoppingListView } from "../components/ShoppingListView";
@@ -24,6 +25,7 @@ import type {
   Dish,
   DishSpec,
   ProductionPlan,
+  PurchaseInvoice,
   Sale,
   SpecItem,
   StockItem,
@@ -51,6 +53,7 @@ export default function Home() {
   const [antennaStocks, setAntennaStocks] = useState<AntennaDishStock[]>([]);
   const [antennaMovements, setAntennaMovements] = useState<AntennaMovement[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
@@ -64,6 +67,9 @@ export default function Home() {
     const savedAntennaStocks = window.localStorage.getItem("phf-antenna-stocks");
     const savedAntennaMovements = window.localStorage.getItem("phf-antenna-movements");
     const savedSales = window.localStorage.getItem("phf-sales");
+    const savedPurchaseInvoices = window.localStorage.getItem(
+      "phf-purchase-invoices"
+    );
     const user = users.find((item) => item.name === savedUser);
 
     if (user) setCurrentUser(user);
@@ -77,6 +83,9 @@ export default function Home() {
     if (savedAntennaStocks) setAntennaStocks(JSON.parse(savedAntennaStocks));
     if (savedAntennaMovements) setAntennaMovements(JSON.parse(savedAntennaMovements));
     if (savedSales) setSales(JSON.parse(savedSales));
+    if (savedPurchaseInvoices) {
+      setPurchaseInvoices(JSON.parse(savedPurchaseInvoices));
+    }
 
     setIsReady(true);
   }, []);
@@ -94,6 +103,10 @@ export default function Home() {
     window.localStorage.setItem("phf-antenna-stocks", JSON.stringify(antennaStocks));
     window.localStorage.setItem("phf-antenna-movements", JSON.stringify(antennaMovements));
     window.localStorage.setItem("phf-sales", JSON.stringify(sales));
+    window.localStorage.setItem(
+      "phf-purchase-invoices",
+      JSON.stringify(purchaseInvoices)
+    );
   }, [
     dishes,
     menus,
@@ -105,6 +118,7 @@ export default function Home() {
     antennaStocks,
     antennaMovements,
     sales,
+    purchaseInvoices,
     isReady,
   ]);
 
@@ -352,6 +366,24 @@ export default function Home() {
     });
   }
 
+  function addPurchaseInvoice(
+    invoice: Omit<PurchaseInvoice, "id" | "createdBy">
+  ) {
+    const invoiceWithUser: PurchaseInvoice = {
+      ...invoice,
+      id: Date.now(),
+      createdBy: currentUser?.name || "Utilisateur inconnu",
+    };
+
+    setPurchaseInvoices((current) => [invoiceWithUser, ...current]);
+  }
+
+  function deletePurchaseInvoice(id: number) {
+    setPurchaseInvoices((current) =>
+      current.filter((invoice) => invoice.id !== id)
+    );
+  }
+
   if (!isReady) {
     return (
       <main className="login-page">
@@ -453,6 +485,13 @@ export default function Home() {
           currentUserName={currentUser.name}
           onAddSale={addSale}
           onDeleteSale={deleteSale}
+        />
+      ) : activeModule === "Factures" ? (
+        <PurchaseInvoicesView
+          invoices={purchaseInvoices}
+          currentUserName={currentUser.name}
+          onAddInvoice={addPurchaseInvoice}
+          onDeleteInvoice={deletePurchaseInvoice}
         />
       ) : (
         <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
