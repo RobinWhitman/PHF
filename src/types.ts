@@ -97,3 +97,20 @@ export type AntennaMovement = {
   userName: string;
   comment: string;
 };
+
+export type SaleLine = {
+  dishId: number;
+  quantity: string;
+  unitPrice: string;
+};
+
+export type Sale = {
+  id: number;
+  date: string;
+  time: string;
+  userName: string;
+  antennaId: number;
+  paymentMethod: string;
+  comment: string;
+  lines: SaleLine[];
+};

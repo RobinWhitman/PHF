@@ -10,6 +10,7 @@ import { DishesView } from "../components/DishesView";
 import { LoginScreen } from "../components/LoginScreen";
 import { MenusView } from "../components/MenusView";
 import { ProductionView } from "../components/ProductionView";
+import { SalesView } from "../components/SalesView";
 import { SettingsView } from "../components/SettingsView";
 import { ShoppingListView } from "../components/ShoppingListView";
 import { SpecsView } from "../components/SpecsView";
@@ -23,6 +24,7 @@ import type {
   Dish,
   DishSpec,
   ProductionPlan,
+  Sale,
   SpecItem,
   StockItem,
   StockMovement,
@@ -48,6 +50,7 @@ export default function Home() {
   const [antennas, setAntennas] = useState<Antenna[]>(initialAntennas);
   const [antennaStocks, setAntennaStocks] = useState<AntennaDishStock[]>([]);
   const [antennaMovements, setAntennaMovements] = useState<AntennaMovement[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
 
   useEffect(() => {
     const savedUser = window.localStorage.getItem("phf-user");
@@ -60,6 +63,7 @@ export default function Home() {
     const savedAntennas = window.localStorage.getItem("phf-antennas");
     const savedAntennaStocks = window.localStorage.getItem("phf-antenna-stocks");
     const savedAntennaMovements = window.localStorage.getItem("phf-antenna-movements");
+    const savedSales = window.localStorage.getItem("phf-sales");
     const user = users.find((item) => item.name === savedUser);
 
     if (user) setCurrentUser(user);
@@ -72,6 +76,7 @@ export default function Home() {
     if (savedAntennas) setAntennas(JSON.parse(savedAntennas));
     if (savedAntennaStocks) setAntennaStocks(JSON.parse(savedAntennaStocks));
     if (savedAntennaMovements) setAntennaMovements(JSON.parse(savedAntennaMovements));
+    if (savedSales) setSales(JSON.parse(savedSales));
 
     setIsReady(true);
   }, []);
@@ -87,10 +92,8 @@ export default function Home() {
     window.localStorage.setItem("phf-stock-movements", JSON.stringify(stockMovements));
     window.localStorage.setItem("phf-antennas", JSON.stringify(antennas));
     window.localStorage.setItem("phf-antenna-stocks", JSON.stringify(antennaStocks));
-    window.localStorage.setItem(
-      "phf-antenna-movements",
-      JSON.stringify(antennaMovements)
-    );
+    window.localStorage.setItem("phf-antenna-movements", JSON.stringify(antennaMovements));
+    window.localStorage.setItem("phf-sales", JSON.stringify(sales));
   }, [
     dishes,
     menus,
@@ -101,6 +104,7 @@ export default function Home() {
     antennas,
     antennaStocks,
     antennaMovements,
+    sales,
     isReady,
   ]);
 
@@ -145,27 +149,22 @@ export default function Home() {
 
   function deleteDish(id: number) {
     setDishes((current) => current.filter((dish) => dish.id !== id));
-
     setMenus((current) =>
       current.map((menu) => ({
         ...menu,
         dishIds: menu.dishIds.filter((dishId) => dishId !== id),
       }))
     );
-
     setSpecs((current) => current.filter((spec) => spec.dishId !== id));
-
     setProductions((current) =>
       current.map((production) => ({
         ...production,
         lines: production.lines.filter((line) => line.dishId !== id),
       }))
     );
-
     setAntennaStocks((current) =>
       current.filter((stock) => stock.dishId !== id)
     );
-
     setAntennaMovements((current) =>
       current.filter((movement) => movement.dishId !== id)
     );
@@ -251,10 +250,7 @@ export default function Home() {
   }
 
   function addAntenna(name: string) {
-    setAntennas((current) => [
-      { id: Date.now(), name, active: true },
-      ...current,
-    ]);
+    setAntennas((current) => [{ id: Date.now(), name, active: true }, ...current]);
   }
 
   function toggleAntenna(id: number) {
@@ -317,6 +313,27 @@ export default function Home() {
             }
           : stock
       );
+    });
+  }
+
+  function addSale(sale: Omit<Sale, "id" | "userName">) {
+    const saleWithUser: Sale = {
+      ...sale,
+      id: Date.now(),
+      userName: currentUser?.name || "Utilisateur inconnu",
+    };
+
+    setSales((current) => [saleWithUser, ...current]);
+
+    sale.lines.forEach((line) => {
+      addAntennaMovement({
+        antennaId: sale.antennaId,
+        dishId: line.dishId,
+        type: "retrait",
+        quantity: line.quantity,
+        date: sale.date,
+        comment: `Vente ${sale.paymentMethod}`,
+      });
     });
   }
 
@@ -411,6 +428,15 @@ export default function Home() {
           onToggleAntenna={toggleAntenna}
           onDeleteAntenna={deleteAntenna}
           onAddAntennaMovement={addAntennaMovement}
+        />
+      ) : activeModule === "Ventes" ? (
+        <SalesView
+          antennas={antennas}
+          dishes={dishes}
+          antennaStocks={antennaStocks}
+          sales={sales}
+          currentUserName={currentUser.name}
+          onAddSale={addSale}
         />
       ) : (
         <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
