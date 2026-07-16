@@ -497,6 +497,44 @@ h2 {
   color: #fb7185;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.confirm-modal {
+  width: min(420px, 100%);
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.confirm-modal p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.modal-actions button {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
 .mobile-nav {
   display: none;
 }

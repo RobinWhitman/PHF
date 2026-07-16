@@ -17,6 +17,7 @@ type SalesViewProps = {
   sales: Sale[];
   currentUserName: string;
   onAddSale: (sale: Omit<Sale, "id" | "userName">) => void;
+  onDeleteSale: (sale: Sale) => void;
 };
 
 export function SalesView({
@@ -26,6 +27,7 @@ export function SalesView({
   sales,
   currentUserName,
   onAddSale,
+  onDeleteSale,
 }: SalesViewProps) {
   const activeAntennas = antennas.filter((antenna) => antenna.active);
   const [selectedAntennaId, setSelectedAntennaId] = useState("");
@@ -37,6 +39,7 @@ export function SalesView({
   const [customerEmail, setCustomerEmail] = useState("");
   const [comment, setComment] = useState("");
   const [lines, setLines] = useState<SaleLine[]>([]);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
 
   const antennaId = Number(selectedAntennaId);
   const availableStocks = antennaStocks.filter(
@@ -82,7 +85,6 @@ export function SalesView({
     event.preventDefault();
 
     if (!antennaId || lines.length === 0) return;
-
     if (invoiceRequested && !customerEmail.trim()) return;
 
     const now = new Date();
@@ -108,6 +110,13 @@ export function SalesView({
     setCustomerEmail("");
     setComment("");
     setLines([]);
+  }
+
+  function confirmDeleteSale() {
+    if (!saleToDelete) return;
+
+    onDeleteSale(saleToDelete);
+    setSaleToDelete(null);
   }
 
   return (
@@ -158,7 +167,6 @@ export function SalesView({
               <option value="">Choisir un plat</option>
               {availableStocks.map((stock) => {
                 const dish = dishes.find((item) => item.id === stock.dishId);
-
                 if (!dish) return null;
 
                 return (
@@ -307,12 +315,41 @@ export function SalesView({
                     <strong>{sale.lines.length}</strong>
                     <span>lignes</span>
                   </div>
+
+                  <div className="dish-actions">
+                    <button
+                      className="delete-action"
+                      onClick={() => setSaleToDelete(sale)}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
               );
             })
           )}
         </div>
       </article>
+
+      {saleToDelete ? (
+        <div className="modal-backdrop">
+          <div className="confirm-modal">
+            <p className="eyebrow">Confirmation</p>
+            <h2>Supprimer cette vente ?</h2>
+            <p>
+              Le stock de l’antenne sera recrédité automatiquement avec les
+              quantités de cette vente.
+            </p>
+
+            <div className="modal-actions">
+              <button onClick={() => setSaleToDelete(null)}>Annuler</button>
+              <button className="delete-action" onClick={confirmDeleteSale}>
+                Confirmer la suppression
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

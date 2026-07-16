@@ -337,6 +337,21 @@ export default function Home() {
     });
   }
 
+  function deleteSale(sale: Sale) {
+    setSales((current) => current.filter((item) => item.id !== sale.id));
+
+    sale.lines.forEach((line) => {
+      addAntennaMovement({
+        antennaId: sale.antennaId,
+        dishId: line.dishId,
+        type: "ajout",
+        quantity: line.quantity,
+        date: new Date().toISOString().slice(0, 10),
+        comment: `Annulation vente ${sale.paymentMethod}`,
+      });
+    });
+  }
+
   if (!isReady) {
     return (
       <main className="login-page">
@@ -437,6 +452,7 @@ export default function Home() {
           sales={sales}
           currentUserName={currentUser.name}
           onAddSale={addSale}
+          onDeleteSale={deleteSale}
         />
       ) : (
         <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
