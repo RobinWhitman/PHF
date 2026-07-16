@@ -152,6 +152,7 @@ export type PurchaseInvoice = {
   ht: string;
   vat: string;
   ttc: string;
+  amountTtc?: string;
   category: string;
   comment: string;
   fileUrl: string;

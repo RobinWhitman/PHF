@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dish, PurchaseInvoice, Sale, SpecItem } from "../types";
+import type { Dish, DishSpec, PurchaseInvoice, Sale, User } from "../types";
 import {
   calculatePurchaseTotal,
   calculateSalesCost,
@@ -10,25 +10,25 @@ import {
 } from "../utils/calculations";
 
 type DashboardViewProps = {
+  currentUser?: User;
+  isAdmin?: boolean;
   dishes?: Dish[];
   sales?: Sale[];
-  specItems?: SpecItem[];
-  specs?: SpecItem[];
+  specs?: DishSpec[];
   purchaseInvoices?: PurchaseInvoice[];
 };
 
 export function DashboardView({
+  currentUser,
+  isAdmin = false,
   dishes = [],
   sales = [],
-  specItems,
-  specs,
+  specs = [],
   purchaseInvoices = [],
 }: DashboardViewProps) {
-  const recipeItems = specItems || specs || [];
-
   const revenue = calculateSalesRevenue(sales, dishes);
-  const recipeCost = calculateSalesCost(sales, recipeItems);
-  const grossProfit = calculateSalesProfit(sales, dishes, recipeItems);
+  const recipeCost = calculateSalesCost(sales, specs);
+  const grossProfit = calculateSalesProfit(sales, dishes, specs);
   const purchaseTotal = calculatePurchaseTotal(purchaseInvoices);
 
   const marginRate = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
@@ -39,6 +39,10 @@ export function DashboardView({
         <div>
           <p className="eyebrow">Vue générale</p>
           <h1>Dashboard</h1>
+        </div>
+
+        <div className="summary-pill">
+          {currentUser?.name || "Utilisateur"} {isAdmin ? "Admin" : ""}
         </div>
       </div>
 
@@ -80,8 +84,8 @@ export function DashboardView({
             </div>
 
             <div>
-              <span>Lignes de cahiers des charges</span>
-              <strong>{recipeItems.length}</strong>
+              <span>Cahiers des charges</span>
+              <strong>{specs.length}</strong>
             </div>
 
             <div>
@@ -96,8 +100,7 @@ export function DashboardView({
 
           <p className="muted-text">
             Le bénéfice brut est calculé avec les ventes moins le coût des recettes
-            renseignées dans les cahiers des charges. Plus les prix unitaires sont remplis,
-            plus le résultat devient fiable.
+            renseignées dans les cahiers des charges.
           </p>
         </div>
       </div>

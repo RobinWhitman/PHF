@@ -1,25 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Dish, SpecItem } from "../types";
-import { calculateDishCost, formatCurrency } from "../utils/calculations";
+import type { Dish, DishSpec, DishSpecItem } from "../types";
+import { calculateDishCost, formatCurrency, normalizeSpecs } from "../utils/calculations";
 
 type SpecsViewProps = {
   dishes: Dish[];
-  specItems?: SpecItem[];
-  specs?: SpecItem[];
-  onAddSpecItem: (item: Omit<SpecItem, "id">) => void;
-  onDeleteSpecItem: (id: number) => void;
+  specs: DishSpec[];
+  onAddSpecItem: (dishId: number, item: Omit<DishSpecItem, "id">) => void;
+  onDeleteSpecItem: (dishId: number, itemId: number) => void;
 };
 
 export function SpecsView({
   dishes,
-  specItems,
   specs,
   onAddSpecItem,
   onDeleteSpecItem,
 }: SpecsViewProps) {
-  const items = specItems || specs || [];
   const activeDishes = dishes.filter((dish) => dish.active);
 
   const [dishId, setDishId] = useState(activeDishes[0]?.id?.toString() || "");
@@ -35,15 +32,16 @@ export function SpecsView({
     return dishes.find((dish) => dish.id === selectedDishId);
   }, [dishes, selectedDishId]);
 
-  const selectedItems = items.filter((item) => item.dishId === selectedDishId);
-  const selectedDishCost = calculateDishCost(selectedDishId, items);
+  const flatSpecs = normalizeSpecs(specs);
+  const selectedItems = flatSpecs.filter((item) => item.dishId === selectedDishId);
+  const selectedDishCost = calculateDishCost(selectedDishId, specs);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!dishId || !name.trim() || !quantity.trim() || !unit.trim()) return;
 
-    onAddSpecItem({
+    onAddSpecItem(selectedDishId, {
       dishId: selectedDishId,
       type,
       name: name.trim(),
@@ -176,7 +174,7 @@ export function SpecsView({
                         <button
                           className="danger-button small-button"
                           type="button"
-                          onClick={() => onDeleteSpecItem(item.id)}
+                          onClick={() => onDeleteSpecItem(selectedDishId, item.id)}
                         >
                           Supprimer
                         </button>
