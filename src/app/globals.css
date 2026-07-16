@@ -358,6 +358,27 @@ h2 {
   resize: vertical;
 }
 
+.checkbox-row {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text) !important;
+}
+
+.checkbox-row input {
+  width: 18px !important;
+  min-height: 18px !important;
+  height: 18px;
+  padding: 0 !important;
+  accent-color: var(--green);
+}
+
 .form-error {
   margin: 0;
   color: #fb7185;

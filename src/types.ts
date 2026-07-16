@@ -111,6 +111,9 @@ export type Sale = {
   userName: string;
   antennaId: number;
   paymentMethod: string;
+  customerName: string;
+  invoiceRequested: boolean;
+  customerEmail: string;
   comment: string;
   lines: SaleLine[];
 };

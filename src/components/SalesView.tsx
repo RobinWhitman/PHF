@@ -32,6 +32,9 @@ export function SalesView({
   const [selectedDishId, setSelectedDishId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [paymentMethod, setPaymentMethod] = useState(settings.payments[0]);
+  const [customerName, setCustomerName] = useState("");
+  const [invoiceRequested, setInvoiceRequested] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState("");
   const [comment, setComment] = useState("");
   const [lines, setLines] = useState<SaleLine[]>([]);
 
@@ -80,6 +83,8 @@ export function SalesView({
 
     if (!antennaId || lines.length === 0) return;
 
+    if (invoiceRequested && !customerEmail.trim()) return;
+
     const now = new Date();
 
     onAddSale({
@@ -87,6 +92,9 @@ export function SalesView({
       time: now.toTimeString().slice(0, 5),
       antennaId,
       paymentMethod,
+      customerName,
+      invoiceRequested,
+      customerEmail: invoiceRequested ? customerEmail : "",
       comment,
       lines,
     });
@@ -95,6 +103,9 @@ export function SalesView({
     setSelectedDishId("");
     setQuantity("");
     setPaymentMethod(settings.payments[0]);
+    setCustomerName("");
+    setInvoiceRequested(false);
+    setCustomerEmail("");
     setComment("");
     setLines([]);
   }
@@ -127,6 +138,15 @@ export function SalesView({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label>
+            Nom du client
+            <input
+              value={customerName}
+              onChange={(event) => setCustomerName(event.target.value)}
+              placeholder="Ex : Marie Dupont"
+            />
           </label>
 
           <label>
@@ -200,6 +220,27 @@ export function SalesView({
             </select>
           </label>
 
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={invoiceRequested}
+              onChange={(event) => setInvoiceRequested(event.target.checked)}
+            />
+            Facture demandée
+          </label>
+
+          {invoiceRequested ? (
+            <label>
+              Email client
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(event) => setCustomerEmail(event.target.value)}
+                placeholder="email@exemple.fr"
+              />
+            </label>
+          ) : null}
+
           <label>
             Commentaire
             <input
@@ -248,7 +289,14 @@ export function SalesView({
                       {formatDate(sale.date)} à {sale.time} -{" "}
                       {antenna?.name || "Antenne supprimée"}
                     </p>
+                    <p>Client : {sale.customerName || "Non renseigné"}</p>
                     <p>{getSaleSummary(sale, dishes)}</p>
+                    <p>
+                      Facture :{" "}
+                      {sale.invoiceRequested
+                        ? `oui - ${sale.customerEmail}`
+                        : "non"}
+                    </p>
                     <p>
                       Créé par {sale.userName || currentUserName}
                       {sale.comment ? ` - ${sale.comment}` : ""}
