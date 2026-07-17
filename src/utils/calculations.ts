@@ -3,27 +3,15 @@ import type {
   DishSpec,
   DishSpecItem,
   NeedLine,
+  ProductionLine,
   ProductionPlan,
   PurchaseInvoice,
   Sale,
   SpecItem,
+  WeeklyMenu,
 } from "../types";
 
 type AnySpecInput = DishSpec[] | DishSpecItem[] | SpecItem[];
-
-type LegacyProductionLine = {
-  dishId: number;
-  portions?: string;
-  quantity?: string;
-};
-
-type LegacyProductionPlan = {
-  id: number;
-  name: string;
-  date: string;
-  menuId?: number | null;
-  lines: LegacyProductionLine[];
-};
 
 type AnyStockMovement = {
   itemId?: number;
@@ -40,24 +28,17 @@ export function toNumber(value: string | number | undefined | null): number {
   }
 
   const parsed = Number(value.replace(",", ".").trim());
-
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export function toDecimalString(value: number): string {
   if (!Number.isFinite(value)) return "0";
-
-  const rounded = Math.round(value * 1000) / 1000;
-
-  return String(rounded);
+  return String(Math.round(value * 1000) / 1000);
 }
 
 export function normalizeSpecs(specs: AnySpecInput): DishSpecItem[] {
   return specs.flatMap((spec) => {
-    if ("items" in spec) {
-      return spec.items;
-    }
-
+    if ("items" in spec) return spec.items;
     return [spec as DishSpecItem];
   });
 }
@@ -78,7 +59,6 @@ export function formatDate(value: string): string {
   if (!value) return "-";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleDateString("fr-FR");
@@ -91,22 +71,22 @@ export function formatCurrency(value: number): string {
   });
 }
 
-export function getStockCategoryLabel(type: string): string {
-  if (type === "ingredient") return "Ingrédient";
-  if (type === "consommable") return "Consommable";
-
-  return type || "-";
+export function getStockCategoryLabel(category: string): string {
+  if (category === "ingredient") return "Ingrédient";
+  if (category === "consommable") return "Consommable";
+  if (category === "plat") return "Plat préparé";
+  return category || "-";
 }
 
-export function getStockCategoryName(type: string): string {
-  if (type === "ingredient") return "Ingrédients";
-  if (type === "consommable") return "Consommables";
-
-  return type || "-";
+export function getStockCategoryName(category: string): string {
+  if (category === "ingredient") return "Ingrédients";
+  if (category === "consommable") return "Consommables";
+  if (category === "plat") return "Plats préparés";
+  return category || "-";
 }
 
 export function isStockEntry(type: string): boolean {
-  return type === "Entrée" || type === "entrée" || type === "Ajout";
+  return type === "entrée" || type === "Entrée" || type === "ajout" || type === "Ajout";
 }
 
 export function isMenuActive(menu: { startDate: string; endDate: string }): boolean {
@@ -121,7 +101,9 @@ export function isMenuActive(menu: { startDate: string; endDate: string }): bool
   return today >= start && today <= end;
 }
 
-export function getMenuDishNames(dishIds: number[], dishes: Dish[]): string {
+export function getMenuDishNames(menuOrDishIds: WeeklyMenu | number[], dishes: Dish[]): string {
+  const dishIds = Array.isArray(menuOrDishIds) ? menuOrDishIds : menuOrDishIds.dishIds;
+
   if (!dishIds.length) return "Aucun plat";
 
   return dishIds
@@ -132,19 +114,17 @@ export function getMenuDishNames(dishIds: number[], dishes: Dish[]): string {
 export function calculateDishCost(dishId: number, specs: AnySpecInput): number {
   return normalizeSpecs(specs)
     .filter((item) => item.dishId === dishId)
-    .reduce((total, item) => {
-      return total + toNumber(item.quantity) * toNumber(item.unitCost);
-    }, 0);
+    .reduce((total, item) => total + toNumber(item.quantity) * toNumber(item.unitCost), 0);
 }
 
 export function calculateSaleLineRevenue(
   dishId: number,
   quantity: string,
   dishes: Dish[],
+  unitPrice?: string,
 ): number {
   const dish = dishes.find((item) => item.id === dishId);
-
-  return toNumber(quantity) * toNumber(dish?.price);
+  return toNumber(quantity) * toNumber(unitPrice || dish?.price);
 }
 
 export function calculateSaleLineCost(
@@ -157,7 +137,7 @@ export function calculateSaleLineCost(
 
 export function calculateSaleRevenue(sale: Sale, dishes: Dish[]): number {
   return sale.lines.reduce((total, line) => {
-    return total + calculateSaleLineRevenue(line.dishId, line.quantity, dishes);
+    return total + calculateSaleLineRevenue(line.dishId, line.quantity, dishes, line.unitPrice);
   }, 0);
 }
 
@@ -168,15 +148,11 @@ export function calculateSaleCost(sale: Sale, specs: AnySpecInput): number {
 }
 
 export function calculateSalesRevenue(sales: Sale[], dishes: Dish[]): number {
-  return sales.reduce((total, sale) => {
-    return total + calculateSaleRevenue(sale, dishes);
-  }, 0);
+  return sales.reduce((total, sale) => total + calculateSaleRevenue(sale, dishes), 0);
 }
 
 export function calculateSalesCost(sales: Sale[], specs: AnySpecInput): number {
-  return sales.reduce((total, sale) => {
-    return total + calculateSaleCost(sale, specs);
-  }, 0);
+  return sales.reduce((total, sale) => total + calculateSaleCost(sale, specs), 0);
 }
 
 export function calculateSalesProfit(
@@ -189,21 +165,26 @@ export function calculateSalesProfit(
 
 export function calculatePurchaseTotal(purchaseInvoices: PurchaseInvoice[]): number {
   return purchaseInvoices.reduce((total, invoice) => {
-    return total + toNumber(invoice.ttc);
+    return total + toNumber(invoice.amountTtc || invoice.ttc);
   }, 0);
 }
 
+function getProductionLines(productionOrLines: ProductionPlan | ProductionLine[]): ProductionLine[] {
+  return Array.isArray(productionOrLines) ? productionOrLines : productionOrLines.lines;
+}
+
 export function getProductionDishSummary(
-  lines: LegacyProductionLine[],
+  productionOrLines: ProductionPlan | ProductionLine[],
   dishes: Dish[],
 ): string {
+  const lines = getProductionLines(productionOrLines);
+
   if (!lines.length) return "Aucun plat";
 
   return lines
     .map((line) => {
       const dish = dishes.find((item) => item.id === line.dishId);
       const quantity = line.portions || line.quantity || "0";
-
       return `${dish?.name || "Plat inconnu"} x ${quantity}`;
     })
     .join(", ");
@@ -234,58 +215,19 @@ export function calculateProductionNeeds(
 }
 
 export function getProductionNeedsSummary(
-  plan: LegacyProductionPlan,
+  productionPlan: ProductionPlan,
+  _dishes: Dish[],
   specs: AnySpecInput,
 ): string {
-  const flatSpecs = normalizeSpecs(specs);
+  const needs = getShoppingNeeds(productionPlan, specs);
 
-  const needs = plan.lines.flatMap((line) => {
-    const portions = toNumber(line.portions || line.quantity || "0");
+  if (!needs.length) return "Aucun besoin calculé";
 
-    return flatSpecs
-      .filter((item) => item.dishId === line.dishId)
-      .map((item) => ({
-        name: item.name,
-        quantity: toNumber(item.quantity) * portions,
-        unit: item.unit,
-        type: item.type,
-      }));
-  });
-
-  const aggregated = aggregateLegacyNeeds(needs);
-
-  if (!aggregated.length) return "Aucun besoin calculé";
-
-  return aggregated
-    .map((need) => `${need.name} : ${toDecimalString(need.quantity)} ${need.unit}`)
-    .join(", ");
-}
-
-function aggregateLegacyNeeds(
-  lines: { name: string; quantity: number; unit: string; type: string }[],
-): { name: string; quantity: number; unit: string; type: string }[] {
-  const grouped = new Map<string, { name: string; quantity: number; unit: string; type: string }>();
-
-  lines.forEach((line) => {
-    const key = `${line.type}-${line.name}-${line.unit}`;
-    const existing = grouped.get(key);
-
-    if (!existing) {
-      grouped.set(key, { ...line });
-      return;
-    }
-
-    grouped.set(key, {
-      ...existing,
-      quantity: existing.quantity + line.quantity,
-    });
-  });
-
-  return Array.from(grouped.values());
+  return needs.map((need) => `${need.name} : ${need.quantity} ${need.unit}`).join(", ");
 }
 
 export function getShoppingNeeds(
-  productionPlan: LegacyProductionPlan,
+  productionPlan: ProductionPlan,
   specs: AnySpecInput,
 ): {
   id: number;
@@ -296,7 +238,7 @@ export function getShoppingNeeds(
 }[] {
   const flatSpecs = normalizeSpecs(specs);
 
-  const needs = productionPlan.lines.flatMap((line) => {
+  const rawNeeds = productionPlan.lines.flatMap((line) => {
     const portions = toNumber(line.portions || line.quantity || "0");
 
     return flatSpecs
@@ -309,9 +251,29 @@ export function getShoppingNeeds(
       }));
   });
 
-  return aggregateLegacyNeeds(needs).map((need, index) => ({
+  const grouped = new Map<
+    string,
+    { type: "ingredient" | "consommable"; name: string; quantity: number; unit: string }
+  >();
+
+  rawNeeds.forEach((need) => {
+    const key = `${need.type}-${need.name}-${need.unit}`;
+    const existing = grouped.get(key);
+
+    if (!existing) {
+      grouped.set(key, { ...need });
+      return;
+    }
+
+    grouped.set(key, {
+      ...existing,
+      quantity: existing.quantity + need.quantity,
+    });
+  });
+
+  return Array.from(grouped.values()).map((need, index) => ({
     id: index + 1,
-    type: need.type as "ingredient" | "consommable",
+    type: need.type,
     name: need.name,
     quantity: toDecimalString(need.quantity),
     unit: need.unit,
@@ -344,12 +306,7 @@ export function getStockQuantity(itemId: number, movements: AnyStockMovement[]):
     .filter((movement) => (movement.stockItemId ?? movement.itemId) === itemId)
     .reduce((total, movement) => {
       const quantity = toNumber(movement.quantity);
-
-      if (isStockEntry(movement.type)) {
-        return total + quantity;
-      }
-
-      return total - quantity;
+      return isStockEntry(movement.type) ? total + quantity : total - quantity;
     }, 0);
 }
 
@@ -362,11 +319,6 @@ export function getAntennaDishQuantity(
     .filter((movement) => movement.antennaId === antennaId && movement.dishId === dishId)
     .reduce((total, movement) => {
       const quantity = toNumber(movement.quantity);
-
-      if (movement.type === "Ajout") {
-        return total + quantity;
-      }
-
-      return total - quantity;
+      return isStockEntry(movement.type) ? total + quantity : total - quantity;
     }, 0);
 }

@@ -52,7 +52,7 @@ export type ProductionPlan = {
   id: number;
   name: string;
   date: string;
-  menuId: number | null;
+  menuId?: number | null;
   lines: ProductionLine[];
   userName?: string;
 };
@@ -74,23 +74,27 @@ export type NeedLine = {
   unit: string;
 };
 
+export type StockCategory = "ingredient" | "consommable" | "plat";
+
 export type StockItem = {
   id: number;
   name: string;
-  type: "ingredient" | "consommable";
+  category: StockCategory;
+  type?: StockCategory;
   unit: string;
   quantity: string;
-  alertThreshold: string;
+  minQuantity: string;
+  alertThreshold?: string;
   userName?: string;
 };
 
-export type StockMovementType = "Entrée" | "Sortie" | "entrée" | "sortie";
+export type StockMovementType = "entrée" | "sortie" | "Entrée" | "Sortie";
 
 export type StockMovement = {
   id: number;
   date: string;
+  stockItemId: number;
   itemId?: number;
-  stockItemId?: number;
   type: StockMovementType;
   quantity: string;
   comment: string;
@@ -128,14 +132,16 @@ export type AntennaMovement = {
 export type SaleLine = {
   dishId: number;
   quantity: string;
+  unitPrice: string;
 };
 
 export type Sale = {
   id: number;
   date: string;
+  time: string;
   antennaId: number;
-  payment: string;
   paymentMethod: string;
+  payment?: string;
   customerName: string;
   invoiceRequested: boolean;
   customerEmail: string;
@@ -149,10 +155,12 @@ export type PurchaseInvoice = {
   date: string;
   supplier: string;
   number: string;
-  ht: string;
-  vat: string;
-  ttc: string;
-  amountTtc?: string;
+  amountHt: string;
+  amountVat: string;
+  amountTtc: string;
+  ht?: string;
+  vat?: string;
+  ttc?: string;
   category: string;
   comment: string;
   fileUrl: string;
