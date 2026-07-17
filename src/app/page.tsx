@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 
 import { AntennasView, calculateNextAntennaStock } from "../components/AntennasView";
 import { AppShell } from "../components/AppShell";
+import { ClientInvoicesView } from "../components/ClientInvoicesView";
 import { DashboardView } from "../components/DashboardView";
 import { DishesView } from "../components/DishesView";
 import { HistoryView } from "../components/HistoryView";
@@ -18,9 +19,13 @@ import { ShoppingListView } from "../components/ShoppingListView";
 import { SpecsView } from "../components/SpecsView";
 import { StocksView } from "../components/StocksView";
 import { VatView } from "../components/VatView";
-import { ClientInvoicesView } from "../components/ClientInvoicesView";
 
-import { initialAntennas, initialDishes, users } from "../data/initial-data";
+import {
+  initialAntennas,
+  initialDishes,
+  initialSpecs,
+  users,
+} from "../data/initial-data";
 import type {
   Antenna,
   AntennaDishStock,
@@ -49,7 +54,7 @@ export default function Home() {
 
   const [dishes, setDishes] = useState<Dish[]>(initialDishes);
   const [menus, setMenus] = useState<WeeklyMenu[]>([]);
-  const [specs, setSpecs] = useState<DishSpec[]>([]);
+  const [specs, setSpecs] = useState<DishSpec[]>(initialSpecs);
   const [productions, setProductions] = useState<ProductionPlan[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
@@ -225,18 +230,24 @@ export default function Home() {
 
   function addSpecItem(dishId: number, item: Omit<SpecItem, "id">) {
     const dish = dishes.find((dishItem) => dishItem.id === dishId);
+    const normalizedName = item.name.toLowerCase();
+    const hasSauceLine = normalizedName.includes("sauce");
 
     setSpecs((current) => {
       const existingSpec = current.find((spec) => spec.dishId === dishId);
       const newItem = { ...item, id: Date.now() };
 
       if (!existingSpec) {
-        return [{ dishId, items: [newItem] }, ...current];
+        return [{ dishId, hasSauce: hasSauceLine, items: [newItem] }, ...current];
       }
 
       return current.map((spec) =>
         spec.dishId === dishId
-          ? { ...spec, items: [newItem, ...spec.items] }
+          ? {
+              ...spec,
+              hasSauce: spec.hasSauce || hasSauceLine,
+              items: [newItem, ...spec.items],
+            }
           : spec
       );
     });
@@ -607,7 +618,7 @@ export default function Home() {
           onAddSale={addSale}
           onDeleteSale={deleteSale}
         />
-              ) : activeModule === "Factures client" ? (
+      ) : activeModule === "Factures client" ? (
         <ClientInvoicesView
           sales={sales}
           dishes={dishes}
@@ -626,7 +637,14 @@ export default function Home() {
       ) : activeModule === "Historique" ? (
         <HistoryView entries={historyEntries} />
       ) : (
-        <DashboardView currentUser={currentUser} isAdmin={isAdmin} />
+        <DashboardView
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+          dishes={dishes}
+          sales={sales}
+          specs={specs}
+          purchaseInvoices={purchaseInvoices}
+        />
       )}
     </AppShell>
   );

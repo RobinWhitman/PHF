@@ -1,4 +1,5 @@
-import type { Antenna, Dish, User } from "../types";
+import type { Antenna, User } from "../types";
+import { importedDishes, importedSpecs } from "./imported-catalog";
 
 export const users: User[] = [
   { name: "Robin", role: "admin", pin: "2323" },
@@ -29,18 +30,8 @@ export const settings = {
   purchaseCategories: ["Ingrédients", "Emballages", "Charges"],
 };
 
-export const initialDishes: Dish[] = [
-  {
-    id: 1,
-    name: "Shawarma Bowl",
-    price: "12.90",
-    category: "Plats",
-    vat: "5.5",
-    description: "Poulet, riz, crudités et sauce maison.",
-    photo: "",
-    active: true,
-  },
-];
+export const initialDishes = importedDishes;
+export const initialSpecs = importedSpecs;
 
 export const initialAntennas: Antenna[] = [
   { id: 1, name: "Cuisine principale", active: true },

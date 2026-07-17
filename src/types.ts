@@ -39,6 +39,7 @@ export type SpecItem = DishSpecItem;
 
 export type DishSpec = {
   dishId: number;
+  hasSauce?: boolean;
   items: DishSpecItem[];
 };
 
