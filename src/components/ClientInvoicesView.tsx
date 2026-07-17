@@ -15,6 +15,8 @@ type ClientInvoicesViewProps = {
 
 type InvoiceStatusMap = Record<string, InvoiceStatus>;
 
+const invoiceTemplateUrl = "/FACTURE%20VIERGE.pdf";
+
 export function ClientInvoicesView({
   sales,
   dishes,
@@ -94,7 +96,7 @@ export function ClientInvoicesView({
           <h1>Factures client</h1>
         </div>
 
-        <a className="primary-action invoice-link" href="/facture-vierge.pdf" target="_blank">
+        <a className="primary-action invoice-link" href={invoiceTemplateUrl} target="_blank">
           Ouvrir le modèle vierge
         </a>
       </div>
@@ -133,20 +135,30 @@ export function ClientInvoicesView({
           </div>
 
           <p className="muted-text invoice-note">
-            Connecté : {currentUserName}. Le PDF automatique sera branché sur ton modèle au sprint suivant.
+            Connecté : {currentUserName}. Le PDF automatique sera branché sur ce modèle au sprint suivant.
           </p>
         </div>
 
         <div className="panel">
           <div className="panel-title-row">
             <div>
-              <h2>Modèle PHF</h2>
-              <p>Fichier provisoire utilisé comme base</p>
+              <h2>Modèle facture PHF</h2>
+              <p>Facture vierge utilisée comme base</p>
             </div>
           </div>
 
           <div className="invoice-brand-preview">
-            <img src="/logo.png" alt="Pat Healthy Food" />
+            <iframe
+              src={invoiceTemplateUrl}
+              title="Facture vierge PHF"
+              style={{
+                width: "100%",
+                height: "420px",
+                border: "0",
+                borderRadius: "8px",
+                background: "#ffffff",
+              }}
+            />
           </div>
         </div>
       </div>
