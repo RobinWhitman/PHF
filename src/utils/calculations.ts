@@ -71,6 +71,18 @@ export function formatCurrency(value: number): string {
   });
 }
 
+export function calculateSpecItemCost(item: DishSpecItem): number {
+  const quantity = toNumber(item.quantity);
+  const unitCost = toNumber(item.unitCost);
+  const unit = item.unit.toLowerCase();
+
+  if (unit === "g" || unit === "ml") {
+    return (quantity / 1000) * unitCost;
+  }
+
+  return quantity * unitCost;
+}
+
 export function getStockCategoryLabel(category: string): string {
   if (category === "ingredient") return "Ingrédient";
   if (category === "consommable") return "Consommable";
@@ -114,7 +126,7 @@ export function getMenuDishNames(menuOrDishIds: WeeklyMenu | number[], dishes: D
 export function calculateDishCost(dishId: number, specs: AnySpecInput): number {
   return normalizeSpecs(specs)
     .filter((item) => item.dishId === dishId)
-    .reduce((total, item) => total + toNumber(item.quantity) * toNumber(item.unitCost), 0);
+    .reduce((total, item) => total + calculateSpecItemCost(item), 0);
 }
 
 export function calculateSaleLineRevenue(

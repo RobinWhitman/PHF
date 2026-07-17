@@ -35,6 +35,17 @@ button {
   cursor: pointer;
 }
 
+input,
+select,
+textarea {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 0 12px;
+}
+
 .app-layout {
   display: grid;
   grid-template-columns: 250px 1fr;
@@ -85,7 +96,9 @@ button {
 .setting-list p,
 .dish-info p,
 .dish-info span,
-.dish-meta span {
+.dish-meta span,
+.muted-text,
+.panel-title-row p {
   color: var(--muted);
 }
 
@@ -145,10 +158,9 @@ button {
 }
 
 .content {
-  display: grid;
-  gap: 14px;
+  display: block;
   min-height: 100vh;
-  padding: 18px;
+  padding: 32px 36px;
 }
 
 .topbar {
@@ -159,12 +171,43 @@ button {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 12px;
+  padding-bottom: 26px;
   background: var(--background);
 }
 
+.module-page,
+.dishes-layout,
+.settings-grid {
+  width: 100%;
+  max-width: 1640px;
+}
+
+.module-page {
+  display: grid;
+  gap: 22px;
+}
+
+.module-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 4px;
+}
+
+.summary-pill {
+  min-height: 42px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .eyebrow {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   color: var(--green);
   font-size: 0.74rem;
   font-weight: 800;
@@ -179,7 +222,7 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-size: clamp(2.3rem, 4vw, 3.4rem);
   line-height: 1;
 }
 
@@ -188,7 +231,8 @@ h2 {
   font-size: 1.1rem;
 }
 
-.primary-action {
+.primary-action,
+.primary-button {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 8px;
@@ -199,8 +243,8 @@ h2 {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 14px;
 }
 
 .metric-card,
@@ -212,40 +256,60 @@ h2 {
 }
 
 .metric-card {
-  min-height: 82px;
-  padding: 14px;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  min-height: 96px;
+  padding: 18px;
 }
 
+.metric-card span,
 .metric-card p {
-  margin-bottom: 10px;
+  margin: 0;
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
 .metric-card strong {
-  font-size: 1.35rem;
+  display: block;
+  font-size: 1.45rem;
+}
+
+.work-grid,
+.workspace-grid {
+  display: grid;
+  gap: 14px;
 }
 
 .work-grid {
-  display: grid;
   grid-template-columns: 1.4fr 0.8fr;
   grid-template-rows: auto auto;
-  gap: 10px;
+}
+
+.workspace-grid.two-columns,
+.two-columns {
+  grid-template-columns: minmax(360px, 0.75fr) minmax(0, 1.25fr);
 }
 
 .panel {
-  padding: 14px;
+  padding: 18px;
 }
 
 .large-panel {
   grid-row: span 2;
 }
 
-.panel-heading {
+.panel-heading,
+.panel-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.panel-title-row p {
+  margin: 6px 0 0;
 }
 
 .status-pill {
@@ -275,21 +339,29 @@ h2 {
 
 .action-list,
 .alert-list,
-.setting-list {
+.setting-list,
+.info-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
+.info-list div,
 .action-list button,
 .alert-list p,
 .setting-list p {
   margin: 0;
   min-height: 42px;
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 8px;
   background: var(--surface-soft);
   color: var(--text);
   text-align: left;
+}
+
+.info-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .setting-list input {
@@ -325,31 +397,25 @@ h2 {
 }
 
 .login-form,
-.entity-form {
+.entity-form,
+.form-panel {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 14px;
 }
 
 .login-form label,
-.entity-form label {
+.entity-form label,
+.form-panel label {
   display: grid;
   gap: 6px;
   color: var(--muted);
   font-size: 0.9rem;
-}
-
-.login-form select,
-.login-form input,
-.entity-form select,
-.entity-form input,
-.entity-form textarea {
-  width: 100%;
-  min-height: 42px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--text);
-  padding: 0 12px;
 }
 
 .entity-form textarea {
@@ -404,7 +470,7 @@ h2 {
   display: grid;
   grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
   align-items: start;
-  gap: 10px;
+  gap: 14px;
 }
 
 .setting-card {
@@ -420,15 +486,15 @@ h2 {
 
 .dish-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .dish-row {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px;
+  gap: 14px;
+  padding: 12px;
   border-radius: 8px;
   background: var(--surface-soft);
 }
@@ -472,6 +538,34 @@ h2 {
 .dish-actions {
   display: grid;
   gap: 6px;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+td {
+  color: var(--text);
 }
 
 .toggle,
@@ -541,8 +635,14 @@ h2 {
 
 @media (max-width: 980px) {
   .settings-grid,
-  .dishes-layout {
+  .dishes-layout,
+  .workspace-grid.two-columns,
+  .two-columns {
     grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
   }
 }
 
@@ -559,15 +659,22 @@ h2 {
 
   .content {
     min-height: calc(100vh - 64px);
-    padding: 14px;
+    padding: 16px;
   }
 
   .topbar {
     align-items: stretch;
     flex-direction: column;
+    padding-bottom: 18px;
   }
 
-  .primary-action {
+  .module-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primary-action,
+  .primary-button {
     width: 100%;
   }
 
@@ -637,23 +744,24 @@ h2 {
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 520px) {
   h1 {
     font-size: 2rem;
   }
 
   .content {
     gap: 10px;
-    padding: 10px;
+    padding: 12px;
   }
 
-  .metrics-grid {
-    gap: 8px;
+  .metrics-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 
   .metric-card {
     min-height: 74px;
-    padding: 10px;
+    padding: 12px;
   }
 
   .metric-card strong {
@@ -661,6 +769,6 @@ h2 {
   }
 
   .panel {
-    padding: 10px;
+    padding: 12px;
   }
 }

@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 import type { Dish, DishSpec, DishSpecItem } from "../types";
-import { calculateDishCost, formatCurrency, normalizeSpecs } from "../utils/calculations";
+import {
+  calculateDishCost,
+  calculateSpecItemCost,
+  formatCurrency,
+  normalizeSpecs,
+} from "../utils/calculations";
 
 type SpecsViewProps = {
   dishes: Dish[];
@@ -72,38 +77,38 @@ export function SpecsView({
         <form className="panel form-panel" onSubmit={handleSubmit}>
           <h2>Ajouter une ligne</h2>
 
-          <label>
-            Plat
-            <select value={dishId} onChange={(event) => setDishId(event.target.value)}>
-              {activeDishes.map((dish) => (
-                <option key={dish.id} value={dish.id}>
-                  {dish.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="form-grid">
+            <label>
+              Plat
+              <select value={dishId} onChange={(event) => setDishId(event.target.value)}>
+                {activeDishes.map((dish) => (
+                  <option key={dish.id} value={dish.id}>
+                    {dish.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Type
-            <select
-              value={type}
-              onChange={(event) => setType(event.target.value as "ingredient" | "consommable")}
-            >
-              <option value="ingredient">Ingrédient</option>
-              <option value="consommable">Consommable</option>
-            </select>
-          </label>
+            <label>
+              Type
+              <select
+                value={type}
+                onChange={(event) => setType(event.target.value as "ingredient" | "consommable")}
+              >
+                <option value="ingredient">Ingrédient</option>
+                <option value="consommable">Consommable</option>
+              </select>
+            </label>
 
-          <label>
-            Nom
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Poulet, riz, boîte..."
-            />
-          </label>
+            <label>
+              Nom
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Poulet, riz, boîte..."
+              />
+            </label>
 
-          <div className="form-row">
             <label>
               Quantité par portion
               <input
@@ -115,32 +120,37 @@ export function SpecsView({
 
             <label>
               Unité
+              <select value={unit} onChange={(event) => setUnit(event.target.value)}>
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+                <option value="unité">unité</option>
+              </select>
+            </label>
+
+            <label>
+              Prix achat au kg / litre / unité
               <input
-                value={unit}
-                onChange={(event) => setUnit(event.target.value)}
-                placeholder="g, ml, unité"
+                value={unitCost}
+                onChange={(event) => setUnitCost(event.target.value)}
+                placeholder="Ex : 7.90 pour 7,90 €/kg"
               />
             </label>
           </div>
 
-          <label>
-            Prix unitaire achat
-            <input
-              value={unitCost}
-              onChange={(event) => setUnitCost(event.target.value)}
-              placeholder="Ex : 0.008 pour 0,008 €/g"
-            />
-          </label>
-
-          <button className="primary-button" type="submit">
+          <button className="primary-action" type="submit">
             Ajouter au cahier
           </button>
         </form>
 
         <div className="panel">
           <div className="panel-title-row">
-            <h2>{selectedDish?.name || "Plat"}</h2>
-            <span>{selectedItems.length} lignes</span>
+            <div>
+              <h2>{selectedDish?.name || "Plat"}</h2>
+              <p>{selectedItems.length} ligne(s)</p>
+            </div>
+            <strong>{formatCurrency(selectedDishCost)}</strong>
           </div>
 
           <div className="table-wrap readable-table">
@@ -149,17 +159,15 @@ export function SpecsView({
                 <tr>
                   <th>Type</th>
                   <th>Nom</th>
-                  <th>Qté</th>
-                  <th>Coût unitaire</th>
+                  <th>Quantité</th>
+                  <th>Prix achat</th>
                   <th>Total portion</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {selectedItems.map((item) => {
-                  const total =
-                    Number(String(item.quantity).replace(",", ".")) *
-                    Number(String(item.unitCost || "0").replace(",", "."));
+                  const total = calculateSpecItemCost(item);
 
                   return (
                     <tr key={item.id}>
@@ -168,11 +176,11 @@ export function SpecsView({
                       <td>
                         {item.quantity} {item.unit}
                       </td>
-                      <td>{item.unitCost ? formatCurrency(Number(item.unitCost)) : "-"}</td>
-                      <td>{formatCurrency(Number.isFinite(total) ? total : 0)}</td>
+                      <td>{item.unitCost ? formatCurrency(Number(item.unitCost.replace(",", "."))) : "-"}</td>
+                      <td>{formatCurrency(total)}</td>
                       <td>
                         <button
-                          className="danger-button small-button"
+                          className="delete-action"
                           type="button"
                           onClick={() => onDeleteSpecItem(selectedDishId, item.id)}
                         >
