@@ -1,10 +1,15 @@
+"use client";
+
 import { useState } from "react";
 import type { FormEvent } from "react";
-import type { Dish, DishSpec, ProductionLine, ProductionPlan, WeeklyMenu } from "../types";
+import { PDFDocument } from "pdf-lib";
+import type { Dish, DishSpec, DishSpecItem, ProductionLine, ProductionPlan, WeeklyMenu } from "../types";
 import {
   formatDate,
   getProductionDishSummary,
   getProductionNeedsSummary,
+  normalizeSpecs,
+  toNumber,
 } from "../utils/calculations";
 
 type ProductionViewProps = {
@@ -15,6 +20,12 @@ type ProductionViewProps = {
   onAddProduction: (production: Omit<ProductionPlan, "id">) => void;
   onDeleteProduction: (id: number) => void;
 };
+
+const productionTemplateUrl = "/FICHE%20PRODUCTION%20REMPLISSABLE.pdf";
+
+const starchKeywords = ["riz", "pates", "semoule", "quinoa", "patate", "pomme de terre"];
+const meatKeywords = ["poulet", "boeuf", "dinde", "agneau", "thon", "saumon"];
+const sauceKeywords = ["sauce"];
 
 export function ProductionView({
   dishes,
@@ -86,6 +97,65 @@ export function ProductionView({
     setSelectedDishId("");
     setPortions("");
     setLines([]);
+  }
+
+  async function generateProductionPdf(production: ProductionPlan) {
+    const response = await fetch(productionTemplateUrl);
+    const existingPdfBytes = await response.arrayBuffer();
+
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const form = pdfDoc.getForm();
+
+    safeSetText(form, "date_production", formatDateForPdf(production.date));
+
+    const flatSpecs = normalizeSpecs(specs);
+
+    production.lines.slice(0, 10).forEach((line, index) => {
+      const position = index + 1;
+      const dish = dishes.find((item) => item.id === line.dishId);
+      const dishSpecs = flatSpecs.filter((item) => item.dishId === line.dishId);
+      const portionsCount = toNumber(line.portions || line.quantity || "0");
+
+      safeSetText(form, `nom_plat${position}`, dish?.name || "");
+      safeSetText(form, `qte_plats${position}`, portionsCount ? `x ${toCleanNumber(portionsCount)}` : "");
+      safeSetText(
+        form,
+        `qte_feculents${position}`,
+        formatGramQuantity(calculateIngredientCategoryTotal(dishSpecs, portionsCount, starchKeywords))
+      );
+      safeSetText(
+        form,
+        `qte_viande${position}`,
+        formatGramQuantity(calculateIngredientCategoryTotal(dishSpecs, portionsCount, meatKeywords))
+      );
+      safeSetText(form, `sauce${position}`, hasKeyword(dishSpecs, sauceKeywords) ? "Oui" : "Non");
+    });
+
+    for (let position = production.lines.length + 1; position <= 10; position += 1) {
+      safeSetText(form, `nom_plat${position}`, "");
+      safeSetText(form, `qte_plats${position}`, "");
+      safeSetText(form, `qte_feculents${position}`, "");
+      safeSetText(form, `qte_viande${position}`, "");
+      safeSetText(form, `sauce${position}`, "");
+    }
+
+    form.flatten();
+
+    const pdfBytes = await pdfDoc.save();
+    const pdfArrayBuffer = pdfBytes.buffer.slice(
+      pdfBytes.byteOffset,
+      pdfBytes.byteOffset + pdfBytes.byteLength
+    ) as ArrayBuffer;
+
+    const blob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fiche-production-${production.date}.pdf`;
+    link.click();
+
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -219,7 +289,7 @@ export function ProductionView({
             </div>
           ) : (
             productions.map((production) => (
-              <div className="dish-row" key={production.id}>
+              <div className="dish-row production-row" key={production.id}>
                 <div className="dish-photo">PROD</div>
 
                 <div className="dish-info">
@@ -238,6 +308,14 @@ export function ProductionView({
 
                 <div className="dish-actions">
                   <button
+                    className="primary-action"
+                    type="button"
+                    onClick={() => generateProductionPdf(production)}
+                  >
+                    Fiche PDF
+                  </button>
+
+                  <button
                     className="delete-action"
                     onClick={() => onDeleteProduction(production.id)}
                   >
@@ -251,4 +329,71 @@ export function ProductionView({
       </article>
     </section>
   );
+}
+
+function normalizeKeyword(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .trim();
+}
+
+function hasKeyword(items: DishSpecItem[], keywords: string[]) {
+  return items.some((item) => {
+    const normalizedName = normalizeKeyword(item.name);
+    return keywords.some((keyword) => normalizedName.includes(keyword));
+  });
+}
+
+function calculateIngredientCategoryTotal(
+  items: DishSpecItem[],
+  portions: number,
+  keywords: string[]
+) {
+  return items.reduce((total, item) => {
+    const normalizedName = normalizeKeyword(item.name);
+    const matches = keywords.some((keyword) => normalizedName.includes(keyword));
+
+    if (!matches) return total;
+
+    return total + convertToGrams(item.quantity, item.unit) * portions;
+  }, 0);
+}
+
+function convertToGrams(quantity: string, unit: string) {
+  const value = toNumber(quantity);
+  const normalizedUnit = normalizeKeyword(unit);
+
+  if (normalizedUnit === "kg") return value * 1000;
+  if (normalizedUnit === "g") return value;
+
+  return value;
+}
+
+function formatGramQuantity(value: number) {
+  if (!value) return "";
+  return `${toCleanNumber(value)} g`;
+}
+
+function toCleanNumber(value: number) {
+  if (Number.isInteger(value)) return String(value);
+  return String(Math.round(value * 100) / 100).replace(".", ",");
+}
+
+function formatDateForPdf(value: string) {
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+
+  return `${day}/${month}/${year}`;
+}
+
+function safeSetText(form: ReturnType<PDFDocument["getForm"]>, fieldName: string, value: string) {
+  try {
+    form.getTextField(fieldName).setText(value);
+  } catch {
+    // Le modèle actuel n'a pas forcément qte_plats1 : on ignore les champs absents.
+  }
 }
