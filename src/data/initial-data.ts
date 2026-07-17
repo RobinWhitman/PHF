@@ -16,6 +16,7 @@ export const navItems = [
   "Stocks",
   "Antennes",
   "Ventes",
+  "Factures client",
   "Factures",
   "TVA",
   "Historique",

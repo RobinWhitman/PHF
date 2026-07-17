@@ -18,6 +18,7 @@ import { ShoppingListView } from "../components/ShoppingListView";
 import { SpecsView } from "../components/SpecsView";
 import { StocksView } from "../components/StocksView";
 import { VatView } from "../components/VatView";
+import { ClientInvoicesView } from "../components/ClientInvoicesView";
 
 import { initialAntennas, initialDishes, users } from "../data/initial-data";
 import type {
@@ -605,6 +606,13 @@ export default function Home() {
           currentUserName={currentUser.name}
           onAddSale={addSale}
           onDeleteSale={deleteSale}
+        />
+              ) : activeModule === "Factures client" ? (
+        <ClientInvoicesView
+          sales={sales}
+          dishes={dishes}
+          antennas={antennas}
+          currentUserName={currentUser.name}
         />
       ) : activeModule === "Factures" ? (
         <PurchaseInvoicesView

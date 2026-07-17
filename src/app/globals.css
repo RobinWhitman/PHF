@@ -772,3 +772,60 @@ td {
     padding: 12px;
   }
 }
+.invoice-link {
+  display: inline-grid;
+  place-items: center;
+  text-decoration: none;
+}
+
+.invoice-note {
+  margin: 16px 0 0;
+  line-height: 1.5;
+}
+
+.invoice-brand-preview {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.invoice-brand-preview img {
+  display: block;
+  width: min(360px, 100%);
+  height: auto;
+}
+
+.invoice-row {
+  grid-template-columns: 54px minmax(0, 1fr) 150px 360px;
+}
+
+.invoice-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invoice-actions button {
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .invoice-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .invoice-row .dish-meta,
+  .invoice-row .dish-actions {
+    grid-column: 2;
+    justify-self: stretch;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .invoice-actions {
+    grid-template-columns: 1fr;
+  }
+}
