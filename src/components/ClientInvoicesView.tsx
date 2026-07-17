@@ -152,8 +152,12 @@ export function ClientInvoicesView({
 
     form.flatten();
 
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const pdfBytes = await pdfDoc.save();
+    const pdfArrayBuffer = pdfBytes.buffer.slice(
+      pdfBytes.byteOffset,
+      pdfBytes.byteOffset + pdfBytes.byteLength
+    ) as ArrayBuffer;
+    const blob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
