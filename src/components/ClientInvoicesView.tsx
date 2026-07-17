@@ -15,6 +15,7 @@ type ClientInvoicesViewProps = {
 };
 
 type InvoiceStatusMap = Record<string, InvoiceStatus>;
+type InvoicePdfMap = Record<string, string>;
 
 const invoiceTemplateUrl = "/FACTURE%20remplissable.pdf";
 
@@ -25,15 +26,23 @@ export function ClientInvoicesView({
   currentUserName,
 }: ClientInvoicesViewProps) {
   const [statuses, setStatuses] = useState<InvoiceStatusMap>({});
+  const [storedPdfs, setStoredPdfs] = useState<InvoicePdfMap>({});
 
   useEffect(() => {
     const savedStatuses = window.localStorage.getItem("phf-client-invoice-statuses");
+    const savedPdfs = window.localStorage.getItem("phf-client-invoice-pdfs");
+
     if (savedStatuses) setStatuses(JSON.parse(savedStatuses));
+    if (savedPdfs) setStoredPdfs(JSON.parse(savedPdfs));
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem("phf-client-invoice-statuses", JSON.stringify(statuses));
   }, [statuses]);
+
+  useEffect(() => {
+    window.localStorage.setItem("phf-client-invoice-pdfs", JSON.stringify(storedPdfs));
+  }, [storedPdfs]);
 
   const invoiceSales = useMemo(() => {
     return sales.filter((sale) => sale.invoiceRequested);
@@ -45,6 +54,10 @@ export function ClientInvoicesView({
 
   function updateStatus(saleId: number, status: InvoiceStatus) {
     setStatuses((current) => ({ ...current, [String(saleId)]: status }));
+  }
+
+  function getInvoiceNumber(sale: Sale) {
+    return `PHF-${sale.date.replaceAll("-", "")}-${sale.id}`;
   }
 
   function getSaleTotal(sale: Sale) {
@@ -129,58 +142,83 @@ export function ClientInvoicesView({
     const fields: Record<string, string> = {
       nom_client: sale.customerName || "Client",
       date_facture: formatDate(sale.date),
-      numero_facture: "",
-      qte_repas_8: String(buckets.qte_repas_8 || ""),
-      qte_repas_10: String(buckets.qte_repas_10 || ""),
-      qte_repas_12: String(buckets.qte_repas_12 || ""),
-      qte_desserts: String(buckets.qte_desserts || ""),
-      qte_collations: String(buckets.qte_collations || ""),
-      total_repas_8: buckets.total_repas_8 ? formatMoney(buckets.total_repas_8) : "",
-      total_repas_10: buckets.total_repas_10 ? formatMoney(buckets.total_repas_10) : "",
-      total_repas_12: buckets.total_repas_12 ? formatMoney(buckets.total_repas_12) : "",
-      total_desserts: buckets.total_desserts ? formatMoney(buckets.total_desserts) : "",
-      total_collations: buckets.total_collations ? formatMoney(buckets.total_collations) : "",
+      numero_facture: getInvoiceNumber(sale),
+
+      qte_repas_8: formatQuantity(buckets.qte_repas_8),
+      qte_repas_10: formatQuantity(buckets.qte_repas_10),
+      qte_repas_12: formatQuantity(buckets.qte_repas_12),
+      qte_desserts: formatQuantity(buckets.qte_desserts),
+      qte_collations: formatQuantity(buckets.qte_collations),
+
+      total_repas_8: formatMoney(buckets.total_repas_8),
+      total_repas_10: formatMoney(buckets.total_repas_10),
+      total_repas_12: formatMoney(buckets.total_repas_12),
+      total_desserts: formatMoney(buckets.total_desserts),
+      total_collations: formatMoney(buckets.total_collations),
+
       total_ht: formatMoney(totalHt),
       tva: formatMoney(tva),
       total_ttc: formatMoney(totalTtc),
     };
 
     Object.entries(fields).forEach(([name, value]) => {
-      const field = form.getTextField(name);
-      field.setText(value);
+      form.getTextField(name).setText(value);
     });
 
     form.flatten();
 
-        const pdfBytes = await pdfDoc.save();
+    const pdfBytes = await pdfDoc.save();
     const pdfArrayBuffer = pdfBytes.buffer.slice(
       pdfBytes.byteOffset,
       pdfBytes.byteOffset + pdfBytes.byteLength
     ) as ArrayBuffer;
-    const blob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
 
+    const base64 = arrayBufferToBase64(pdfArrayBuffer);
+
+    setStoredPdfs((current) => ({
+      ...current,
+      [String(sale.id)]: base64,
+    }));
+
+    updateStatus(sale.id, "Générée");
+  }
+
+  function openStoredPdf(sale: Sale) {
+    const base64 = storedPdfs[String(sale.id)];
+    if (!base64) return;
+
+    const url = createPdfUrl(base64);
+    window.open(url, "_blank");
+  }
+
+  function downloadStoredPdf(sale: Sale) {
+    const base64 = storedPdfs[String(sale.id)];
+    if (!base64) return;
+
+    const url = createPdfUrl(base64);
     const link = document.createElement("a");
     link.href = url;
     link.download = `facture-${sale.customerName || "client"}-${sale.date}.pdf`;
     link.click();
 
     URL.revokeObjectURL(url);
-    updateStatus(sale.id, "Générée");
   }
 
   function openEmail(sale: Sale) {
-    const subject = encodeURIComponent("Facture Pat Healthy Food");
+    const subject = encodeURIComponent(`Facture ${getInvoiceNumber(sale)} - Pat Healthy Food`);
     const body = encodeURIComponent(
       [
         `Bonjour ${sale.customerName || ""},`,
         "",
-        "Veuillez trouver votre facture Pat Healthy Food.",
+        "Votre facture Pat Healthy Food est prête.",
         "",
+        `Numéro : ${getInvoiceNumber(sale)}`,
         `Montant TTC : ${formatCurrency(getSaleTotal(sale))}`,
         "",
         "Bonne journée,",
         "Pat Healthy Food",
+        "",
+        "Note interne : le PDF doit être joint manuellement pour l’instant.",
       ].join("\n")
     );
 
@@ -231,7 +269,9 @@ export function ClientInvoicesView({
             </div>
           </div>
 
-          <p className="muted-text invoice-note">Connecté : {currentUserName}</p>
+          <p className="muted-text invoice-note">
+            Connecté : {currentUserName}. Les PDF générés restent dans le navigateur de cet appareil.
+          </p>
         </div>
 
         <div className="panel">
@@ -276,6 +316,7 @@ export function ClientInvoicesView({
             invoiceSales.map((sale) => {
               const antenna = antennas.find((item) => item.id === sale.antennaId);
               const status = getStatus(sale.id);
+              const hasPdf = Boolean(storedPdfs[String(sale.id)]);
 
               return (
                 <div className="dish-row invoice-row" key={sale.id}>
@@ -288,7 +329,7 @@ export function ClientInvoicesView({
                     </div>
 
                     <p>
-                      {formatDate(sale.date)} à {sale.time} -{" "}
+                      {getInvoiceNumber(sale)} - {formatDate(sale.date)} à {sale.time} -{" "}
                       {antenna?.name || "Antenne supprimée"}
                     </p>
                     <p>Email : {sale.customerEmail || "Non renseigné"}</p>
@@ -297,7 +338,7 @@ export function ClientInvoicesView({
 
                   <div className="dish-meta">
                     <strong>{status}</strong>
-                    <span>{sale.paymentMethod}</span>
+                    <span>{hasPdf ? "PDF en app" : "Aucun PDF"}</span>
                   </div>
 
                   <div className="dish-actions invoice-actions">
@@ -312,9 +353,27 @@ export function ClientInvoicesView({
                     <button
                       className="primary-action"
                       type="button"
+                      onClick={() => openStoredPdf(sale)}
+                      disabled={!hasPdf}
+                    >
+                      Ouvrir PDF
+                    </button>
+
+                    <button
+                      className="primary-action"
+                      type="button"
+                      onClick={() => downloadStoredPdf(sale)}
+                      disabled={!hasPdf}
+                    >
+                      Télécharger
+                    </button>
+
+                    <button
+                      className="primary-action"
+                      type="button"
                       onClick={() => updateStatus(sale.id, "Envoyée")}
                     >
-                      Envoyée
+                      Marquer envoyée
                     </button>
 
                     <button
@@ -331,7 +390,7 @@ export function ClientInvoicesView({
                       onClick={() => openEmail(sale)}
                       disabled={!sale.customerEmail}
                     >
-                      Mail
+                      Préparer mail
                     </button>
                   </div>
                 </div>
@@ -345,5 +404,40 @@ export function ClientInvoicesView({
 }
 
 function formatMoney(value: number) {
+  if (!Number.isFinite(value) || value === 0) return "0";
   return value.toFixed(2).replace(".", ",");
+}
+
+function formatQuantity(value: number) {
+  if (!Number.isFinite(value) || value === 0) return "0";
+  return String(value);
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return window.btoa(binary);
+}
+
+function base64ToArrayBuffer(base64: string) {
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes.buffer;
+}
+
+function createPdfUrl(base64: string) {
+  const buffer = base64ToArrayBuffer(base64);
+  const blob = new Blob([buffer], { type: "application/pdf" });
+
+  return URL.createObjectURL(blob);
 }
