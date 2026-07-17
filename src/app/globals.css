@@ -870,3 +870,82 @@ td {
 .content {
   overflow: hidden;
 }
+:root {
+  --background: #070806;
+  --sidebar: #10110d;
+  --surface: #151711;
+  --surface-soft: #1d2017;
+  --border: #343829;
+  --text: #fffaf0;
+  --muted: #c7c0a8;
+
+  --green: #34a853;
+  --green-soft: rgba(52, 168, 83, 0.22);
+
+  --yellow: #ffd84d;
+  --yellow-soft: rgba(255, 216, 77, 0.18);
+
+  --accent: var(--yellow);
+}
+
+.eyebrow,
+.nav-item.active,
+.nav-item:hover,
+.user-card span,
+.status-pill {
+  color: var(--yellow);
+}
+
+.nav-item.active,
+.nav-item:hover,
+.status-pill {
+  background: var(--yellow-soft);
+}
+
+.primary-action,
+.primary-button {
+  background: linear-gradient(135deg, var(--green), var(--yellow));
+  color: #0b0b06;
+  box-shadow: 0 0 0 1px rgba(255, 216, 77, 0.2);
+}
+
+.brand img {
+  border: 1px solid rgba(255, 216, 77, 0.45);
+  background: #fffaf0;
+}
+
+.metric-card,
+.panel,
+.login-card,
+.user-card {
+  border-color: var(--border);
+  background: #12150f;
+}
+
+.info-list div,
+.action-list button,
+.alert-list p,
+.setting-list p,
+.dish-row {
+  background: #1a1d15;
+}
+
+.dish-photo {
+  background: var(--yellow-soft);
+  color: var(--yellow);
+}
+
+.toggle.active {
+  background: var(--yellow-soft);
+  color: var(--yellow);
+}
+
+.delete-action {
+  background: #2a1717;
+  color: #ff8a8a;
+}
+
+.mobile-nav button.active {
+  background: var(--yellow-soft);
+  color: var(--yellow);
+}
