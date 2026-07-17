@@ -829,3 +829,44 @@ td {
     grid-template-columns: 1fr;
   }
 }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+}
+
+.brand img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 4px;
+}
+
+.brand span {
+  display: none;
+}
+
+.brand strong {
+  display: block;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+.brand p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.sidebar {
+  overflow: hidden;
+}
+
+.content {
+  overflow: hidden;
+}
