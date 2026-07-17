@@ -278,6 +278,22 @@ export default function Home() {
     );
   }
 
+    function toggleSpecSauce(dishId: number) {
+    const dish = dishes.find((item) => item.id === dishId);
+
+    setSpecs((current) =>
+      current.map((spec) =>
+        spec.dishId === dishId ? { ...spec, hasSauce: !spec.hasSauce } : spec
+      )
+    );
+
+    addHistory(
+      "Cahiers",
+      "Sauce fiche",
+      `Sauce modifiée : ${dish?.name || dishId}`
+    );
+  }
+
   function addProduction(production: Omit<ProductionPlan, "id">) {
     setProductions((current) => [{ ...production, id: Date.now() }, ...current]);
     addHistory("Production", "Création production", production.name);
@@ -572,6 +588,7 @@ export default function Home() {
           specs={specs}
           onAddSpecItem={addSpecItem}
           onDeleteSpecItem={deleteSpecItem}
+          onToggleSpecSauce={toggleSpecSauce}
         />
       ) : activeModule === "Production" ? (
         <ProductionView

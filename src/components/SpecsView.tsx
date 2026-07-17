@@ -14,6 +14,7 @@ type SpecsViewProps = {
   specs: DishSpec[];
   onAddSpecItem: (dishId: number, item: Omit<DishSpecItem, "id">) => void;
   onDeleteSpecItem: (dishId: number, itemId: number) => void;
+  onToggleSpecSauce: (dishId: number) => void;
 };
 
 export function SpecsView({
@@ -21,6 +22,7 @@ export function SpecsView({
   specs,
   onAddSpecItem,
   onDeleteSpecItem,
+  onToggleSpecSauce,
 }: SpecsViewProps) {
   const activeDishes = dishes.filter((dish) => dish.active);
 
@@ -37,6 +39,7 @@ export function SpecsView({
     return dishes.find((dish) => dish.id === selectedDishId);
   }, [dishes, selectedDishId]);
 
+  const selectedSpec = specs.find((spec) => spec.dishId === selectedDishId);
   const flatSpecs = normalizeSpecs(specs);
   const selectedItems = flatSpecs.filter((item) => item.dishId === selectedDishId);
   const selectedDishCost = calculateDishCost(selectedDishId, specs);
@@ -49,7 +52,7 @@ export function SpecsView({
     onAddSpecItem(selectedDishId, {
       dishId: selectedDishId,
       type,
-      name: name.trim(),
+      name: name.trim().toLowerCase(),
       quantity: quantity.trim(),
       unit: unit.trim(),
       unitCost: unitCost.trim(),
@@ -71,6 +74,15 @@ export function SpecsView({
         <div className="summary-pill">
           Coût portion : {formatCurrency(selectedDishCost)}
         </div>
+      </div>
+
+      <div className="panel">
+        <h2>Consigne de nommage</h2>
+        <p className="muted-text">
+          Pour les fiches production, nomme les ingrédients en minuscule sans accent :
+          riz, pates, semoule, quinoa, patate, pomme de terre, poulet, boeuf, dinde,
+          agneau, thon, saumon, sauce.
+        </p>
       </div>
 
       <div className="workspace-grid two-columns">
@@ -105,7 +117,7 @@ export function SpecsView({
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Poulet, riz, boîte..."
+                placeholder="Ex : poulet, riz, sauce blanche"
               />
             </label>
 
@@ -153,6 +165,15 @@ export function SpecsView({
             <strong>{formatCurrency(selectedDishCost)}</strong>
           </div>
 
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={Boolean(selectedSpec?.hasSauce)}
+              onChange={() => onToggleSpecSauce(selectedDishId)}
+            />
+            Sauce dans ce plat
+          </label>
+
           <div className="table-wrap readable-table">
             <table>
               <thead>
@@ -176,7 +197,11 @@ export function SpecsView({
                       <td>
                         {item.quantity} {item.unit}
                       </td>
-                      <td>{item.unitCost ? formatCurrency(Number(item.unitCost.replace(",", "."))) : "-"}</td>
+                      <td>
+                        {item.unitCost
+                          ? formatCurrency(Number(item.unitCost.replace(",", ".")))
+                          : "-"}
+                      </td>
                       <td>{formatCurrency(total)}</td>
                       <td>
                         <button

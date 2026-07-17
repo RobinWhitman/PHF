@@ -22,7 +22,7 @@ export function AppShell({
     <main className="app-layout">
       <aside className="sidebar">
         <div className="brand">
-          <span>PHF</span>
+          <img src="/logo.png" alt="Pat Healthy Food" />
           <div>
             <strong>Pat Healthy Food</strong>
             <p>ERP interne</p>
@@ -61,7 +61,7 @@ export function AppShell({
       <section className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Macro Sprint 11</p>
+            <p className="eyebrow">PHF ERP</p>
             <h1>{activeModule}</h1>
           </div>
 
@@ -77,17 +77,15 @@ export function AppShell({
       </section>
 
       <nav className="mobile-nav">
-        {["Dashboard", "Courses", "Stocks", "Production", "Ventes"].map(
-          (item) => (
-            <button
-              className={activeModule === item ? "active" : ""}
-              key={item}
-              onClick={() => onActiveModuleChange(item)}
-            >
-              {item}
-            </button>
-          )
-        )}
+        {["Dashboard", "Courses", "Stocks", "Production", "Ventes"].map((item) => (
+          <button
+            className={activeModule === item ? "active" : ""}
+            key={item}
+            onClick={() => onActiveModuleChange(item)}
+          >
+            {item}
+          </button>
+        ))}
       </nav>
     </main>
   );

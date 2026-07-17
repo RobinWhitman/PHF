@@ -34,7 +34,6 @@ export const initialDishes = importedDishes;
 export const initialSpecs = importedSpecs;
 
 export const initialAntennas: Antenna[] = [
-  { id: 1, name: "Cuisine principale", active: true },
-  { id: 2, name: "Antenne 1", active: true },
-  { id: 3, name: "Antenne 2", active: true },
+  { id: 1, name: "LABO", active: true },
+  { id: 2, name: "LXII", active: true },
 ];
