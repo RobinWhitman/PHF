@@ -1,8 +1,8 @@
 import type { FormEvent } from "react";
 import type { User } from "../types";
-import { users } from "../data/initial-data";
 
 type LoginScreenProps = {
+  users: User[];
   selectedUser: string;
   pin: string;
   error: string;
@@ -12,6 +12,7 @@ type LoginScreenProps = {
 };
 
 export function LoginScreen({
+  users,
   selectedUser,
   pin,
   error,
@@ -35,7 +36,7 @@ export function LoginScreen({
               value={selectedUser}
               onChange={(event) => onSelectedUserChange(event.target.value)}
             >
-              {users.map((user: User) => (
+              {users.map((user) => (
                 <option key={user.name} value={user.name}>
                   {user.name}
                 </option>
@@ -60,13 +61,6 @@ export function LoginScreen({
             Se connecter
           </button>
         </form>
-
-        <div className="login-help">
-          <p>Codes provisoires</p>
-          <span>Robin : 2323</span>
-          <span>Patrice : 1644</span>
-          <span>Megane : 2010</span>
-        </div>
       </section>
     </main>
   );

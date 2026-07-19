@@ -24,8 +24,9 @@ import {
   initialAntennas,
   initialDishes,
   initialSpecs,
-  users,
+  users as fallbackUsers,
 } from "../data/initial-data";
+import { loadCloudState, loadCloudUsers, saveCloudState } from "../lib/phf-cloud";
 import type {
   Antenna,
   AntennaDishStock,
@@ -47,7 +48,8 @@ import { addDecimalStrings, subtractDecimalStrings } from "../utils/calculations
 export default function Home() {
   const [isReady, setIsReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [selectedUser, setSelectedUser] = useState(users[0].name);
+  const [appUsers, setAppUsers] = useState<User[]>(fallbackUsers);
+  const [selectedUser, setSelectedUser] = useState(fallbackUsers[0].name);
   const [activeModule, setActiveModule] = useState("Dashboard");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -66,36 +68,61 @@ export default function Home() {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
 
   useEffect(() => {
-    const savedUser = window.localStorage.getItem("phf-user");
-    const savedDishes = window.localStorage.getItem("phf-dishes");
-    const savedMenus = window.localStorage.getItem("phf-menus");
-    const savedSpecs = window.localStorage.getItem("phf-specs");
-    const savedProductions = window.localStorage.getItem("phf-productions");
-    const savedStockItems = window.localStorage.getItem("phf-stock-items");
-    const savedStockMovements = window.localStorage.getItem("phf-stock-movements");
-    const savedAntennas = window.localStorage.getItem("phf-antennas");
-    const savedAntennaStocks = window.localStorage.getItem("phf-antenna-stocks");
-    const savedAntennaMovements = window.localStorage.getItem("phf-antenna-movements");
-    const savedSales = window.localStorage.getItem("phf-sales");
-    const savedPurchaseInvoices = window.localStorage.getItem("phf-purchase-invoices");
-    const savedHistoryEntries = window.localStorage.getItem("phf-history");
-    const user = users.find((item) => item.name === savedUser);
+    async function bootApp() {
+      const cloudUsers = await loadCloudUsers(fallbackUsers);
+      setAppUsers(cloudUsers);
 
-    if (user) setCurrentUser(user);
-    if (savedDishes) setDishes(JSON.parse(savedDishes));
-    if (savedMenus) setMenus(JSON.parse(savedMenus));
-    if (savedSpecs) setSpecs(JSON.parse(savedSpecs));
-    if (savedProductions) setProductions(JSON.parse(savedProductions));
-    if (savedStockItems) setStockItems(JSON.parse(savedStockItems));
-    if (savedStockMovements) setStockMovements(JSON.parse(savedStockMovements));
-    if (savedAntennas) setAntennas(JSON.parse(savedAntennas));
-    if (savedAntennaStocks) setAntennaStocks(JSON.parse(savedAntennaStocks));
-    if (savedAntennaMovements) setAntennaMovements(JSON.parse(savedAntennaMovements));
-    if (savedSales) setSales(JSON.parse(savedSales));
-    if (savedPurchaseInvoices) setPurchaseInvoices(JSON.parse(savedPurchaseInvoices));
-    if (savedHistoryEntries) setHistoryEntries(JSON.parse(savedHistoryEntries));
+      const savedUser = window.localStorage.getItem("phf-user");
+      const savedDishes = window.localStorage.getItem("phf-dishes");
+      const savedMenus = window.localStorage.getItem("phf-menus");
+      const savedSpecs = window.localStorage.getItem("phf-specs");
+      const savedProductions = window.localStorage.getItem("phf-productions");
+      const savedStockItems = window.localStorage.getItem("phf-stock-items");
+      const savedStockMovements = window.localStorage.getItem("phf-stock-movements");
+      const savedAntennas = window.localStorage.getItem("phf-antennas");
+      const savedAntennaStocks = window.localStorage.getItem("phf-antenna-stocks");
+      const savedAntennaMovements = window.localStorage.getItem("phf-antenna-movements");
+      const savedSales = window.localStorage.getItem("phf-sales");
+      const savedPurchaseInvoices = window.localStorage.getItem("phf-purchase-invoices");
+      const savedHistoryEntries = window.localStorage.getItem("phf-history");
 
-    setIsReady(true);
+      const user = cloudUsers.find((item) => item.name === savedUser);
+
+      if (user) setCurrentUser(user);
+      if (savedDishes) setDishes(JSON.parse(savedDishes));
+      if (savedMenus) setMenus(JSON.parse(savedMenus));
+      if (savedSpecs) setSpecs(JSON.parse(savedSpecs));
+      if (savedProductions) setProductions(JSON.parse(savedProductions));
+      if (savedStockItems) setStockItems(JSON.parse(savedStockItems));
+      if (savedStockMovements) setStockMovements(JSON.parse(savedStockMovements));
+      if (savedAntennas) setAntennas(JSON.parse(savedAntennas));
+      if (savedAntennaStocks) setAntennaStocks(JSON.parse(savedAntennaStocks));
+      if (savedAntennaMovements) setAntennaMovements(JSON.parse(savedAntennaMovements));
+      if (savedSales) setSales(JSON.parse(savedSales));
+      if (savedPurchaseInvoices) setPurchaseInvoices(JSON.parse(savedPurchaseInvoices));
+      if (savedHistoryEntries) setHistoryEntries(JSON.parse(savedHistoryEntries));
+
+      const cloudState = await loadCloudState();
+
+      if (cloudState) {
+        if (cloudState.dishes?.length) setDishes(cloudState.dishes);
+        if (cloudState.menus?.length) setMenus(cloudState.menus);
+        if (cloudState.specs?.length) setSpecs(cloudState.specs);
+        if (cloudState.productions?.length) setProductions(cloudState.productions);
+        if (cloudState.stockItems?.length) setStockItems(cloudState.stockItems);
+        if (cloudState.stockMovements?.length) setStockMovements(cloudState.stockMovements);
+        if (cloudState.antennas?.length) setAntennas(cloudState.antennas);
+        if (cloudState.antennaStocks?.length) setAntennaStocks(cloudState.antennaStocks);
+        if (cloudState.antennaMovements?.length) setAntennaMovements(cloudState.antennaMovements);
+        if (cloudState.sales?.length) setSales(cloudState.sales);
+        if (cloudState.purchaseInvoices?.length) setPurchaseInvoices(cloudState.purchaseInvoices);
+        if (cloudState.historyEntries?.length) setHistoryEntries(cloudState.historyEntries);
+      }
+
+      setIsReady(true);
+    }
+
+    void bootApp();
   }, []);
 
   useEffect(() => {
@@ -113,6 +140,21 @@ export default function Home() {
     window.localStorage.setItem("phf-sales", JSON.stringify(sales));
     window.localStorage.setItem("phf-purchase-invoices", JSON.stringify(purchaseInvoices));
     window.localStorage.setItem("phf-history", JSON.stringify(historyEntries));
+
+    void saveCloudState({
+      dishes,
+      menus,
+      specs,
+      productions,
+      stockItems,
+      stockMovements,
+      antennas,
+      antennaStocks,
+      antennaMovements,
+      sales,
+      purchaseInvoices,
+      historyEntries,
+    });
   }, [
     dishes,
     menus,
@@ -148,7 +190,7 @@ export default function Home() {
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const user = users.find(
+    const user = appUsers.find(
       (item) => item.name === selectedUser && item.pin === pin
     );
 
@@ -278,14 +320,20 @@ export default function Home() {
     );
   }
 
-    function toggleSpecSauce(dishId: number) {
+  function toggleSpecSauce(dishId: number) {
     const dish = dishes.find((item) => item.id === dishId);
 
-    setSpecs((current) =>
-      current.map((spec) =>
+    setSpecs((current) => {
+      const existingSpec = current.find((spec) => spec.dishId === dishId);
+
+      if (!existingSpec) {
+        return [{ dishId, hasSauce: true, items: [] }, ...current];
+      }
+
+      return current.map((spec) =>
         spec.dishId === dishId ? { ...spec, hasSauce: !spec.hasSauce } : spec
-      )
-    );
+      );
+    });
 
     addHistory(
       "Cahiers",
@@ -344,7 +392,7 @@ export default function Home() {
         if (item.id !== movement.stockItemId) return item;
 
         const nextQuantity =
-          movement.type === "entrée"
+          movement.type === "entrée" || movement.type === "Entrée"
             ? addDecimalStrings(item.quantity, movement.quantity)
             : subtractDecimalStrings(item.quantity, movement.quantity);
 
@@ -354,7 +402,7 @@ export default function Home() {
 
     addHistory(
       "Stocks",
-      movement.type === "entrée" ? "Entrée stock" : "Sortie stock",
+      movement.type === "entrée" || movement.type === "Entrée" ? "Entrée stock" : "Sortie stock",
       `${stockItem?.name || "Article"} : ${movement.quantity}`
     );
   }
@@ -514,7 +562,7 @@ export default function Home() {
     addHistory(
       "Factures",
       "Création facture achat",
-      `${invoice.supplier} - ${invoice.amountTtc} € TTC`
+      `${invoice.supplier} - ${invoice.amountTtc || invoice.ttc} € TTC`
     );
   }
 
@@ -546,6 +594,7 @@ export default function Home() {
   if (!currentUser) {
     return (
       <LoginScreen
+        users={appUsers}
         selectedUser={selectedUser}
         pin={pin}
         error={error}

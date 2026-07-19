@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
     "next": "latest",
     "pdf-lib": "^1.17.1",
     "react": "latest",
