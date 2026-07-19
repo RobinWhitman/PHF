@@ -18,11 +18,15 @@ export function AppShell({
   onActiveModuleChange,
   onLogout,
 }: AppShellProps) {
+  const visibleMobileItems = navItems.filter(
+    (item) => item !== "Paramètres" || isAdmin
+  );
+
   return (
     <main className="app-layout">
       <aside className="sidebar">
         <div className="brand">
-          <img src="/logo.png" alt="Pat Healthy Food" />
+          <img src="/logo.png?v=3" alt="Pat Healthy Food" />
           <div>
             <strong>Pat Healthy Food</strong>
             <p>ERP interne</p>
@@ -76,8 +80,8 @@ export function AppShell({
         {children}
       </section>
 
-      <nav className="mobile-nav">
-        {["Dashboard", "Courses", "Stocks", "Production", "Ventes"].map((item) => (
+      <nav className="mobile-nav" aria-label="Navigation mobile">
+        {visibleMobileItems.map((item) => (
           <button
             className={activeModule === item ? "active" : ""}
             key={item}
