@@ -55,7 +55,19 @@ export async function loadCloudState() {
 
   if (error || !data?.payload) return null;
 
-  return data.payload as Partial<PhfAppState>;
+  const payload = data.payload as Partial<PhfAppState>;
+
+  const hasRealCatalog =
+    Array.isArray(payload.dishes) &&
+    payload.dishes.length > 10 &&
+    Array.isArray(payload.specs) &&
+    payload.specs.length > 10;
+
+  if (!hasRealCatalog) {
+    return null;
+  }
+
+  return payload;
 }
 
 export async function saveCloudState(payload: PhfAppState) {
