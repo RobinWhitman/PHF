@@ -132,7 +132,7 @@ export function DashboardView({
     write("DETAIL PAR JOUR", 13, true);
     groupByText(
       weeklySales,
-      (sale) => sale.date,
+      (sale) => sale.date || "Date inconnue",
       (sale) => calculateSaleRevenue(sale, dishes),
     ).forEach(([date, amount]) => {
       write(`${date} : ${formatPdfMoney(amount)}`);
@@ -142,7 +142,7 @@ export function DashboardView({
     write("DETAIL PAR MOYEN DE PAIEMENT", 13, true);
     groupByText(
       weeklySales,
-      (sale) => sale.paymentMethod || sale.payment,
+      (sale) => sale.paymentMethod || sale.payment || "Non renseigne",
       (sale) => calculateSaleRevenue(sale, dishes),
     ).forEach(([payment, amount]) => {
       write(`${payment} : ${formatPdfMoney(amount)}`);
