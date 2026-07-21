@@ -969,3 +969,68 @@ td {
   white-space: nowrap;
   padding: 12px 14px;
 }
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.status-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-soft);
+}
+
+.status-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+
+.status-card strong {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.status-card.ok {
+  border-color: rgba(52, 168, 83, 0.55);
+}
+
+.status-card.ok strong {
+  color: var(--green);
+}
+
+.status-card.danger {
+  border-color: rgba(255, 95, 95, 0.55);
+}
+
+.status-card.danger strong {
+  color: #ff8a8a;
+}
+
+.status-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.status-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 12px 14px;
+}
+
+.status-list span {
+  color: var(--muted);
+}
+
+.status-list strong {
+  color: var(--text);
+}
