@@ -2,8 +2,12 @@
 
 import { settings } from "../data/initial-data";
 
-export function SettingsView() {
-  function handleReset() {
+type SettingsViewProps = {
+  onResetApp: () => Promise<void>;
+};
+
+export function SettingsView({ onResetApp }: SettingsViewProps) {
+  async function handleReset() {
     const confirmText = window.prompt(
       "Remise à zéro complète des données de test. Tape RESET pour confirmer.",
     );
@@ -18,18 +22,14 @@ export function SettingsView() {
     }
 
     const finalConfirm = window.confirm(
-      "Dernière confirmation : toutes les données créées pendant les tests seront supprimées.",
+      "Dernière confirmation : ventes, CA, stocks, productions, factures, historique et données de test seront supprimés sur PC, mobile et Supabase.",
     );
 
     if (!finalConfirm) return;
 
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith("phf-")) {
-        localStorage.removeItem(key);
-      }
-    });
+    await onResetApp();
 
-    window.alert("Application remise à zéro.");
+    window.alert("Application remise à zéro. Les données propres sont conservées.");
     window.location.reload();
   }
 
@@ -83,8 +83,9 @@ export function SettingsView() {
           <h2>Remise à zéro des tests</h2>
 
           <p className="muted-text">
-            Supprime les plats créés, ventes, stocks, productions, factures, antennes,
-            cahiers des charges et historique enregistrés dans le navigateur.
+            Supprime les ventes, CA, stocks, productions, factures, mouvements antennes
+            et historique sur tous les appareils. Les plats, cahiers des charges,
+            comptes et antennes LABO / LXII restent en place.
           </p>
 
           <button className="danger-button" type="button" onClick={handleReset}>

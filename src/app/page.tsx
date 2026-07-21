@@ -402,7 +402,9 @@ export default function Home() {
 
     addHistory(
       "Stocks",
-      movement.type === "entrée" || movement.type === "Entrée" ? "Entrée stock" : "Sortie stock",
+      movement.type === "entrée" || movement.type === "Entrée"
+        ? "Entrée stock"
+        : "Sortie stock",
       `${stockItem?.name || "Article"} : ${movement.quantity}`
     );
   }
@@ -580,6 +582,57 @@ export default function Home() {
     );
   }
 
+  async function resetAppData() {
+    const cleanState = {
+      dishes: initialDishes,
+      menus: [],
+      specs: initialSpecs,
+      productions: [],
+      stockItems: [],
+      stockMovements: [],
+      antennas: initialAntennas,
+      antennaStocks: [],
+      antennaMovements: [],
+      sales: [],
+      purchaseInvoices: [],
+      historyEntries: [],
+    };
+
+    setDishes(cleanState.dishes);
+    setMenus(cleanState.menus);
+    setSpecs(cleanState.specs);
+    setProductions(cleanState.productions);
+    setStockItems(cleanState.stockItems);
+    setStockMovements(cleanState.stockMovements);
+    setAntennas(cleanState.antennas);
+    setAntennaStocks(cleanState.antennaStocks);
+    setAntennaMovements(cleanState.antennaMovements);
+    setSales(cleanState.sales);
+    setPurchaseInvoices(cleanState.purchaseInvoices);
+    setHistoryEntries(cleanState.historyEntries);
+
+    Object.keys(window.localStorage).forEach((key) => {
+      if (key.startsWith("phf-") && key !== "phf-user") {
+        window.localStorage.removeItem(key);
+      }
+    });
+
+    window.localStorage.setItem("phf-dishes", JSON.stringify(cleanState.dishes));
+    window.localStorage.setItem("phf-menus", JSON.stringify(cleanState.menus));
+    window.localStorage.setItem("phf-specs", JSON.stringify(cleanState.specs));
+    window.localStorage.setItem("phf-productions", JSON.stringify(cleanState.productions));
+    window.localStorage.setItem("phf-stock-items", JSON.stringify(cleanState.stockItems));
+    window.localStorage.setItem("phf-stock-movements", JSON.stringify(cleanState.stockMovements));
+    window.localStorage.setItem("phf-antennas", JSON.stringify(cleanState.antennas));
+    window.localStorage.setItem("phf-antenna-stocks", JSON.stringify(cleanState.antennaStocks));
+    window.localStorage.setItem("phf-antenna-movements", JSON.stringify(cleanState.antennaMovements));
+    window.localStorage.setItem("phf-sales", JSON.stringify(cleanState.sales));
+    window.localStorage.setItem("phf-purchase-invoices", JSON.stringify(cleanState.purchaseInvoices));
+    window.localStorage.setItem("phf-history", JSON.stringify(cleanState.historyEntries));
+
+    await saveCloudState(cleanState);
+  }
+
   if (!isReady) {
     return (
       <main className="login-page">
@@ -616,7 +669,7 @@ export default function Home() {
       onLogout={handleLogout}
     >
       {activeModule === "Paramètres" && isAdmin ? (
-        <SettingsView />
+        <SettingsView onResetApp={resetAppData} />
       ) : activeModule === "Plats" ? (
         <DishesView
           dishes={dishes}
@@ -707,6 +760,7 @@ export default function Home() {
           currentUser={currentUser}
           isAdmin={isAdmin}
           dishes={dishes}
+          antennas={antennas}
           sales={sales}
           specs={specs}
           purchaseInvoices={purchaseInvoices}
